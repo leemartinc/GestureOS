@@ -4,8 +4,8 @@ import sys
 import os
 
 def storeImages():
-
-    imageLink = sys.argv[1]
+	
+	imageLink = sys.argv[1]
 	imageUrls = urllib.request.urlopen(imageLink).read().decode()
 
 	directory = "negs"
@@ -21,7 +21,7 @@ def storeImages():
 
 			img = cv2.imread(imgName, cv2.IMREAD_GRAYSCALE)
 			resizedImg = cv2.resize(img, (150, 150))
-			
+
 			cv2.imwrite(imgName, resizedImg)
 			picNumber += 1
 
