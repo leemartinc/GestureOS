@@ -1,0 +1,5 @@
+﻿opencv_createsamples -bg bg.txt -maxxangle 0.5 -maxyangle -0.5 -maxzangle 0.5 -num 370 -w 50 -h 50 -img (#).jpg -vec pos(#).vec
+
+opencv_traincascade -data data -vec positives.vec -bg bg.txt -numPos 2800 -numNeg 1400 -numStages 15 -w 50 -h 50 -featureType HAAR -mode ALL -mem 5600
+
+*NOTE: Training aborted at mid-stage 2 due to excessive training time (2+ days)
