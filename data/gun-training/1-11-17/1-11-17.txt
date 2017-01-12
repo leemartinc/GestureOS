@@ -1,0 +1,9 @@
+opencv_createsamples -bg bg.txt -maxxangle 0.5 -maxyangle -0.5 -maxzangle 0.5 -num 370 -w 20 -h 20 -img (#).jpg -vec pos(#).vec
+
+opencv_traincascade -data data -vec positives.vec -bg bg.txt -numPos 2800 -numNeg 1400 -numStages 15 -w 20 -h 20 -featureType HAAR -mode ALL -mem 5692
+
+*NOTE: Training aborted at start of stage 8 with an error: 
+
+pos current samplesOpenCV Error: Bad argument (Can not get new positives sample. The most possible reason is insufficient count of samples in given vec-file.) in get, file /home/charlie/opencv-3.2.0/apps/traincascade/imagestorage.cpp, line 158 terminate called after throwing an instance of ‘cv::Exception’ what(): /home/charlie/opencv-3.2.0/apps/traincascade/imagestorage.cpp:158: error: (-5) Can not get new positive sample. The most possible reason is insufficient count of samples in given vec-file in function get
+
+Aborted (core dumped)2796
