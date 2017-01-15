@@ -1,5 +1,5 @@
-opencv_traincascade –data data –vec pos.vec –bg bg.txt –numPos 3500 –numNeg 1750 –w 50 –h 50
+opencv_traincascade -data data -vec pos.vec -bg bg.txt -numPos 3500 -numNeg 1750 -w 50 -h 50
 
-opencv_createsamples –img pos.jpg –bg bg.txt –info pos/info.lst –pngoutput pos -maxxangle 0.5 –maxyangle -0.5 –maxzangle 0.5 –num 3581
+opencv_createsamples -img pos.jpg -bg bg.txt -info pos/info.lst -pngoutput pos -maxxangle 0.5 -maxyangle -0.5 -maxzangle 0.5 -num 3581
 
-opencv_createsamples –info pos/info.lst –num 3581 –w 50 –h 50 –vec pos.vec
+opencv_createsamples -info pos/info.lst -num 3581 -w 50 -h 50 -vec pos.vec
