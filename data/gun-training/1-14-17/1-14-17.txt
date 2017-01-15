@@ -1,0 +1,13 @@
+opencv_createsamples -img pos.jpg -bg bg.txt -info pos/info.lst -pngoutput pos -maxxangle 0.5 -maxyangle -0.5 -maxzangle 0.5 -num 1283
+
+opencv_createsamples -info pos/info.lst -num 1283 -w 20 -h 20-vec pos.vec
+
+opencv_traincascade -data data -vec pos.vec -bg bg.txt -numPos 1200 -numNeg 600 -w 20 -h 20 -bt GAB -mode ALL -precalcIdxBufSize 3000
+
+Training aborted at stage 18. Error message is as follows:
+	Bad argument (Can not get new positive sample. The most possible reason is insufficient coun t of samples in given vec-fil.)
+		Probably need to use more negs next time since I only gathered 1283 total negs.
+
+Aborted (core dumped) 1198
+
+Note: Total time taken by the end of stage 17 was 30 minutes and 21 seconds
