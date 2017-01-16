@@ -1,2 +1,2 @@
-# CascadeOS
-GAETF project for 2017! Charlie Liu and Bryan Zhou
+# GestureOS
+GAETF project for 2017! Made by Charlie Liu and Bryan Zhou
