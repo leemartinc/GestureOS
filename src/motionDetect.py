@@ -2,10 +2,9 @@ from picamera.array import PiRGBArray
 from picamera import PiCamera
 import argparse
 import warnings
-import datetime
 import imutils
-import json
 import time
+from math import sqrt
 import cv2
 
 camera = PiCamera()
@@ -18,12 +17,20 @@ print("[INFO] warming up...")
 time.sleep(1)
 avg = None
 motionCounter = 0
+frameNumber = 1
+objectCount = 0
+diffList = []
+lastDecision = "nothing"
+decisionList = []
+startPayingAttention = False
+decision = "nothing"
+fartherCount = 0
+closerCount = 0
+finalDecision = ""
 
 for f in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
         
 	frame = f.array
-	timestamp = datetime.datetime.now()
-	text = "No motion in progress!"
  
 	frame = imutils.resize(frame, width=500)
 	gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -38,36 +45,88 @@ for f in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True
 
 		continue
  
-	cv2.accumulateWeighted(gray, avg, 0.75) # Adjust this value (update speed, contributes to sensitivity)
+	cv2.accumulateWeighted(gray, avg, 0.6) # Adjust this value (update speed, contributes to sensitivity)
 	frameDelta = cv2.absdiff(gray, cv2.convertScaleAbs(avg))
 
-	thresh = cv2.threshold(frameDelta, 5, 255, cv2.THRESH_BINARY)[1] # More research needed...
+	thresh = cv2.threshold(frameDelta, 10, 255, cv2.THRESH_BINARY)[1] # Color limit
 	thresh = cv2.dilate(thresh, None, iterations=2)
-	(_, contours, _) = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE) # More research needed...
- 
-	for c in contours:
 
-		if cv2.contourArea(c) < 5000: # More research needed...
-                        
-			continue
+	whitePoints = cv2.findNonZero(thresh)
 
-		print("[INFO] Hand gesture detected!")
-		exit()
-		(x, y, w, h) = cv2.boundingRect(c)
-		cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-		text = "Motion in progress!"
- 
-	ts = timestamp.strftime("%A %d %B %Y %I:%M:%S%p")
-	cv2.putText(frame, "[Motion Status]: {}".format(text), (10, 20),
-		cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
-	cv2.putText(frame, ts, (10, frame.shape[0] - 10), cv2.FONT_HERSHEY_SIMPLEX,
-		0.35, (0, 0, 255), 1)
+	# DECISION MAKING PART
+
+	if not isinstance(whitePoints, type(None)):
+
+		whitePoints = cv2.findNonZero(thresh).tolist()
+		xValues = []
+
+		for doubleList in whitePoints:
+
+			for list in doubleList:
+
+				xValues.append(list[0])
+		
+		minimum = min(xValues)
+		maximum = max(xValues)
+
+		difference = maximum - minimum
+
+		diffList.append(difference)
+
+		print("Last decision: " + lastDecision)
+
+		if not len(diffList) == 1:
+			if diffList[1] < diffList[0]:
+				decision = "closer"
+			elif diffList[1] > diffList[0]:
+				decision = "farther"
+			else:
+				decision = "same"
+			del diffList[0]
+
+	else:
+
+		decision = "nothing"
 	
-	cv2.imshow("Video Feed", frame)
-	key = cv2.waitKey(1) & 0xFF
- 
-	if key == 27:
-                
-		break
- 
+	# DECISION TRACKING PART
+
+	print("Current decision: " + decision)
+		
+	if lastDecision == "nothing" and decision != "nothing":
+	
+		startPayingAttention = True
+
+		print("Nothing, something met")
+
+	if lastDecision != "nothing" and decision == "nothing":
+
+		startPayingAttention = False
+		print("List finished, here is it: " +  str(decisionList))
+
+		for word in decisionList:
+			if word == "farther":
+				fartherCount += 1
+			elif word == "closer":
+				closerCount += 1
+
+		if fartherCount > closerCount:
+			finalDecision = "farther"
+		elif fartherCount < closerCount:
+			finalDecision = "closer"
+
+		decisionList = []
+		
+	if startPayingAttention == True:
+
+		decisionList.append(decision)
+		print("added decision to list")
+
+	lastDecision = decision
+
+	print("Frame " + str(frameNumber))
+	frameNumber = frameNumber + 1
+	#print("Number of objects " + str(objectCount))
+	objectCount = 0
+	#print(centerList)
+
 	rawCapture.truncate(0)
