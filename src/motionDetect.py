@@ -1,38 +1,36 @@
 from picamera.array import PiRGBArray
 from picamera import PiCamera
-import argparse
-import warnings
-import imutils
 import time
-from math import sqrt
 import cv2
 
 camera = PiCamera()
 camera.resolution = (1280,960)
 camera.framerate = 60
-rawCapture = PiRGBArray(camera, size=(1280,960))
-
-print("[INFO] warming up...")
+rawCapture = PiRGBArray(camera, size = (1280,960))
 
 time.sleep(1)
+
 avg = None
-motionCounter = 0
-frameNumber = 1
-objectCount = 0
+
 diffList = []
-lastDecision = "nothing"
-decisionList = []
-startPayingAttention = False
-decision = "nothing"
+
+currentStatusChange = None
+lastStatusChange = None
+statusList = []
+
+inMotion = False
+
 fartherCount = 0
 closerCount = 0
-finalDecision = ""
 
-for f in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
+finalDecision = None
+
+for frame in camera.capture_continuous(rawCapture, format = "bgr", use_video_port = True):
         
-	frame = f.array
- 
-	frame = imutils.resize(frame, width=500)
+	frame = frame.array
+
+	frame = cv2.resize(frame, (500, 500))
+
 	gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 	gray = cv2.GaussianBlur(gray, (21, 21), 0)
  
@@ -41,23 +39,22 @@ for f in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True
 		avg = gray.copy().astype("float")
 		rawCapture.truncate(0)
 		
-		print("[INFO] All ready!")
+		print("[INFO] Setup complete!")
 
 		continue
  
-	cv2.accumulateWeighted(gray, avg, 0.6) # Adjust this value (update speed, contributes to sensitivity)
+	cv2.accumulateWeighted(gray, avg, 0.6) # Adjustable value for accuracy
 	frameDelta = cv2.absdiff(gray, cv2.convertScaleAbs(avg))
 
-	thresh = cv2.threshold(frameDelta, 10, 255, cv2.THRESH_BINARY)[1] # Color limit
-	thresh = cv2.dilate(thresh, None, iterations=2)
+	thresh = cv2.threshold(frameDelta, 10, 255, cv2.THRESH_BINARY)[1] # Adjustable value for accuracy
+	thresh = cv2.dilate(thresh, None, iterations = 2)
 
 	whitePoints = cv2.findNonZero(thresh)
 
-	# DECISION MAKING PART
-
-	if not isinstance(whitePoints, type(None)):
+	if whitePoints is not None:
 
 		whitePoints = cv2.findNonZero(thresh).tolist()
+
 		xValues = []
 
 		for doubleList in whitePoints:
@@ -70,63 +67,69 @@ for f in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True
 		maximum = max(xValues)
 
 		difference = maximum - minimum
-
 		diffList.append(difference)
 
-		print("Last decision: " + lastDecision)
+		if len(diffList) != 1:
 
-		if not len(diffList) == 1:
 			if diffList[1] < diffList[0]:
-				decision = "closer"
-			elif diffList[1] > diffList[0]:
-				decision = "farther"
-			else:
-				decision = "same"
-			del diffList[0]
 
+				currentStatusChange = "closer"
+
+			elif diffList[1] > diffList[0]:
+
+				currentStatusChange = "farther"
+
+			else:
+
+				currentStatusChange = "same"
+
+			del diffList[0]
+	
 	else:
 
-		decision = "nothing"
+		currentStatusChange = None
 	
-	# DECISION TRACKING PART
+	if inMotion is True:
 
-	print("Current decision: " + decision)
+		statusList.append(currentStatusChange)
 		
-	if lastDecision == "nothing" and decision != "nothing":
+	if lastStatusChange is None and currentStatusChange is not None:
 	
-		startPayingAttention = True
+		inMotion = True
 
-		print("Nothing, something met")
+	elif lastStatusChange is not None and currentStatusChange is None:
 
-	if lastDecision != "nothing" and decision == "nothing":
+		inMotion = False
 
-		startPayingAttention = False
-		print("List finished, here is it: " +  str(decisionList))
+		for status in statusList:
 
-		for word in decisionList:
-			if word == "farther":
+			if status == "farther":
+
 				fartherCount += 1
-			elif word == "closer":
+
+			elif status == "closer":
+
 				closerCount += 1
 
 		if fartherCount > closerCount:
+
 			finalDecision = "farther"
-		elif fartherCount < closerCount:
+
+		elif closerCount > fartherCount:
+
 			finalDecision = "closer"
-
-		decisionList = []
 		
-	if startPayingAttention == True:
+		else:
 
-		decisionList.append(decision)
-		print("added decision to list")
+			finalDecision = "unsure"
 
-	lastDecision = decision
+		fartherCount = 0
+		closerCount = 0
 
-	print("Frame " + str(frameNumber))
-	frameNumber = frameNumber + 1
-	#print("Number of objects " + str(objectCount))
-	objectCount = 0
-	#print(centerList)
+		statusList = []
+
+		print("Hand gesture detected! Motion is: " + finalDecision)
+
+	lastStatusChange = currentStatusChange
 
 	rawCapture.truncate(0)
