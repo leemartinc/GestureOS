@@ -67,6 +67,7 @@ for frame in camera.capture_continuous(rawCapture, format = "bgr", use_video_por
 		maximum = max(xValues)
 
 		difference = maximum - minimum
+
 		diffList.append(difference)
 
 		if len(diffList) != 1:
@@ -129,6 +130,12 @@ for frame in camera.capture_continuous(rawCapture, format = "bgr", use_video_por
 		statusList = []
 
 		print("Hand gesture detected! Motion is: " + finalDecision)
+
+		pipe = open("statusChange", "w")
+
+		pipe.write(finalDecision)
+
+		pipe.close()
 
 	lastStatusChange = currentStatusChange
 
