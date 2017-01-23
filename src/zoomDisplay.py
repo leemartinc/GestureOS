@@ -2,12 +2,15 @@ from transfunction import transfunction
 from screenres import screenres
 import cv2
 import sys
+import os
 
 w = screenres.width
 h = screenres.height
 
 xc = float(sys.argv[1])
 yc = float(sys.argv[2])
+
+rawImg = cv2.imread("image.jpg")
 
 def zoomIn(img):
 
@@ -19,13 +22,25 @@ def zoomIn(img):
  
 def showImage():
 
-  rawImg = cv2.imread("image.jpg")
+  fileList = os.listdir("info")
 
-  pipe = open("statusChange", "r")
+  if len(fileList) == 0:
 
-  output = pipe.read()
+    return
 
-  if output == "closer":
+  for file in fileList:
+
+    os.remove("info/" + file)
+
+  fileList.sort()
+
+  file = fileList[-1]
+
+  fileName = file.split("_")
+
+  output = fileName[1]
+
+  if output == "f":
 
     img = zoomIn(rawImg)
 

@@ -124,18 +124,24 @@ for frame in camera.capture_continuous(rawCapture, format = "bgr", use_video_por
 
 			finalDecision = "unsure"
 
+		if finalDecision == "farther":
+
+			fileName = "info/" + str(int(time.time())) + "_f"
+
+			open(fileName, "a").close()
+		
+		elif finalDecision == "closer":
+
+			fileName = "info/" + str(int(time.time())) + "_c"
+
+			open(fileName, "a").close()
+
 		fartherCount = 0
 		closerCount = 0
 
 		statusList = []
 
 		print("Hand gesture detected! Motion is: " + finalDecision)
-
-		pipe = open("statusChange", "w")
-
-		pipe.write(finalDecision)
-
-		pipe.close()
 
 	lastStatusChange = currentStatusChange
 
