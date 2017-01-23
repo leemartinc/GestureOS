@@ -10,13 +10,17 @@ h = screenres.height
 xc = float(sys.argv[1])
 yc = float(sys.argv[2])
 
-rawImg = cv2.imread("image.jpg")
+getImg = cv2.imread("image.jpg")
+
+rawImg = cv2.resize(getImg, (w, h))
 
 def zoomIn(img):
 
     height, width = img.shape[:2]
 
-    roi = img[int(round(height * 0.25)):int(round(height * 0.75)), int(round(width * 0.25)):int(round(width * 0.75))]
+    rawRoi = img[int(round(height * 0.25)):int(round(height * 0.75)), int(round(width * 0.25)):int(round(width * 0.75))]
+
+    roi = cv2.resize(rawRoi, (w, h))
     
     return roi
  
@@ -48,9 +52,7 @@ def showImage():
 
     img = rawImg
   
-  rawLoadImg = transfunction.transform(img, w, h, xc, yc)
-
-  loadImg = cv2.resize(rawLoadImg, (w, h))
+  loadImg = transfunction.transform(img, w, h, xc, yc)
 
   cv2.imshow("window", loadImg)
   cv2.waitKey(1)
@@ -61,11 +63,14 @@ def showImage():
     
     exit()
 
-cv2.namedWindow("window", cv2.WND_PROP_FULLSCREEN)
+cv2.namedWindow("window", cv2.WINDOW_NORMAL)
 cv2.setWindowProperty("window", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+
+loadImg = transfunction.transform(rawImg, w, h, xc, yc)
+
+cv2.imshow("window", loadImg)
+cv2.waitKey(1)
 
 while True:
 
   showImage()
-    
- 
