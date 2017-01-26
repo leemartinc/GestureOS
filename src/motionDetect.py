@@ -4,9 +4,9 @@ import time
 import cv2
 
 camera = PiCamera()
-camera.resolution = (1280,960)
-camera.framerate = 60
-rawCapture = PiRGBArray(camera, size = (1280,960))
+camera.resolution = (64, 64)
+camera.color_effects = (128, 128)
+rawCapture = PiRGBArray(camera, size = camera.resolution)
 
 time.sleep(1)
 
@@ -25,11 +25,11 @@ closerCount = 0
 
 finalDecision = None
 
-for frame in camera.capture_continuous(rawCapture, format = "bgr", use_video_port = True):
-        
-	frame = frame.array
+while True:
 
-	frame = cv2.resize(frame, (500, 500))
+	camera.capture(rawCapture, format = "bgr", use_video_port = True)
+	
+	frame = rawCapture.array
 
 	gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 	gray = cv2.GaussianBlur(gray, (21, 21), 0)
@@ -37,6 +37,7 @@ for frame in camera.capture_continuous(rawCapture, format = "bgr", use_video_por
 	if avg is None:
                 
 		avg = gray.copy().astype("float")
+
 		rawCapture.truncate(0)
 		
 		print("[INFO] Setup complete!")
