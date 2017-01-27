@@ -4,13 +4,11 @@ import time
 import cv2
 
 camera = PiCamera()
-camera.resolution = (64, 64)
-camera.color_effects = (128, 128)
-rawCapture = PiRGBArray(camera, size = camera.resolution)
+camera.resolution = (256, 256)
+rawCapture1 = PiRGBArray(camera, size = camera.resolution)
+rawCapture2 = PiRGBArray(camera, size = camera.resolution)
 
 time.sleep(1)
-
-avg = None
 
 diffList = []
 
@@ -25,30 +23,29 @@ closerCount = 0
 
 finalDecision = None
 
+camera.capture(rawCapture1, format = "bgr", use_video_port = True)
+
+frame1 = rawCapture1.array
+
+gray1 = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
+
+blur1 = cv2.GaussianBlur(gray1, (5, 5), 0)
+
+rawCapture1.truncate(0)
+
 while True:
 
-	camera.capture(rawCapture, format = "bgr", use_video_port = True)
+	camera.capture(rawCapture2, format = "bgr", use_video_port = True)
 	
-	frame = rawCapture.array
+	frame2 = rawCapture2.array
 
-	gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-	gray = cv2.GaussianBlur(gray, (21, 21), 0)
- 
-	if avg is None:
-                
-		avg = gray.copy().astype("float")
+	gray2 = cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY)
 
-		rawCapture.truncate(0)
-		
-		print("[INFO] Setup complete!")
+	blur2 = cv2.GaussianBlur(gray2, (5, 5), 0)
 
-		continue
- 
-	cv2.accumulateWeighted(gray, avg, 0.6) # Adjustable value for accuracy
-	frameDelta = cv2.absdiff(gray, cv2.convertScaleAbs(avg))
+	diffImg = cv2.absdiff(blur1, blur2)
 
-	thresh = cv2.threshold(frameDelta, 10, 255, cv2.THRESH_BINARY)[1] # Adjustable value for accuracy
-	thresh = cv2.dilate(thresh, None, iterations = 2)
+	thresh = cv2.threshold(diffImg, 10, 255, cv2.THRESH_BINARY)[1]
 
 	whitePoints = cv2.findNonZero(thresh)
 
@@ -146,4 +143,6 @@ while True:
 
 	lastStatusChange = currentStatusChange
 
-	rawCapture.truncate(0)
+	blur1 = blur2
+
+	rawCapture2.truncate(0)
