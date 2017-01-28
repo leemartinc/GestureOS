@@ -16,6 +16,7 @@
 
 from transfunction import transfunction
 from screenres import screenres
+import time
 import cv2
 import sys
 import os
@@ -23,30 +24,52 @@ import os
 w = screenres.width
 h = screenres.height
 
-xc = float(sys.argv[1])
-yc = float(sys.argv[2])
+xc = 0.3
+yc = 0.8
 
-getImg = cv2.imread("image.jpg")
+zoomFactor = 0.25
 
-rawImg = cv2.resize(getImg, (w, h))
+rawImg = cv2.imread("image.jpg")
+
+img = cv2.resize(rawImg, (w, h))
+
+orgImg = img.copy()
+
+def zoomOut(img, depth):
+
+  height, width = img.shape[:2]
+
+  depth -= 1
+
+  if depth == 0:
+
+    return img
+
+  for i in range(0, depth):
+
+    img = zoomIn(img)
+  
+  roi = cv2.resize(img, (w, h))
+
+  return roi
 
 def zoomIn(img):
 
-    height, width = img.shape[:2]
+  height, width = img.shape[:2]
 
-    rawRoi = img[int(round(height * 0.25)):int(round(height * 0.75)), int(round(width * 0.25)):int(round(width * 0.75))]
+  rawRoi = img[int(round(height * zoomFactor)):int(round(height * (1 - zoomFactor))), int(round(width * zoomFactor)):int(round(width * (1 - zoomFactor)))]
 
-    roi = cv2.resize(rawRoi, (w, h))
+  roi = cv2.resize(rawRoi, (w, h))
     
-    return roi
- 
-def showImage():
+  return roi
+
+def getCommand():
 
   fileList = os.listdir("info")
 
   if len(fileList) == 0:
 
-    return
+    return None
 
   for file in fileList:
 
@@ -60,37 +83,68 @@ def showImage():
 
   output = fileName[1]
 
-  if output == "f":
+  return output
+ 
+def showImage(orgImg, img, command):
 
-    img = zoomIn(rawImg)
+  if command == "f":
 
-  else:
+    for i in range(3, 0, -1):
 
-    img = rawImg
-  
-  loadImg = transfunction.transform(img, w, h, xc, yc)
+      img = zoomOut(orgImg, i)
 
-  cv2.imshow("window", loadImg)
-  cv2.waitKey(1)
+      loadImg = transfunction.transform(img, w, h, xc, yc)
 
-  key = cv2.waitKey(1) & 0xFF
+      cv2.imshow("window", loadImg)
+      cv2.waitKey(1)
 
-  if key == 27:
+      key = cv2.waitKey(1) & 0xFF
+
+      if key == 27:
+        
+        exit()
+      
+      time.sleep(0.1)
     
-    exit()
+    return img
+  
+  elif command == "c":
+    
+    for i in range(0, 3):
+
+      img = zoomIn(img)
+
+      loadImg = transfunction.transform(img, w, h, xc, yc)
+
+      cv2.imshow("window", loadImg)
+      cv2.waitKey(1)
+
+      key = cv2.waitKey(1) & 0xFF
+
+      if key == 27:
+        
+        exit()
+      
+      time.sleep(0.1)
+
+    return img
+
 
 cv2.namedWindow("window", cv2.WINDOW_NORMAL)
 cv2.setWindowProperty("window", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
-loadImg = transfunction.transform(rawImg, w, h, xc, yc)
-
-cv2.imshow("window", loadImg)
-cv2.waitKey(1)
+loadImg = transfunction.transform(img, w, h, xc, yc)
 
 cv2.imshow("window", loadImg)
 cv2.waitKey(1)
 
 while True:
 
-  showImage()
+  command = getCommand()
+  
+  if command is None:
+
+    continue
+
+  img = showImage(orgImg, img, command)
   
