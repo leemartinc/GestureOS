@@ -141,6 +141,12 @@ cv2.waitKey(1)
 while True:
 
   command = getCommand()
+
+  key = cv2.waitKey(0) & 0xFF
+
+  if key == 27:
+
+    break
   
   if command is None:
 
