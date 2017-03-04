@@ -27,42 +27,40 @@ h = screenres.height
 xc = 0.3
 yc = 0.8
 
-zoomFactor = 0.25
+numberOfStages = 20
 
 rawImg = cv2.imread("image.jpg")
 
 img = cv2.resize(rawImg, (w, h))
 
-orgImg = img.copy()
+roiList = [img]
 
-def zoomOut(img, depth):
+def zoomOut(stageNumber):
 
-  height, width = img.shape[:2]
+  roi = roiList[stageNumber - 1]
 
-  depth -= 1
+  return roi
 
-  if depth == 0:
-
-    return img
-
-  for i in range(0, depth):
-
-    img = zoomIn(img)
+def zoomIn(img, stageNumber, factor):
   
-  roi = cv2.resize(img, (w, h))
+  if len(roiList) <= stageNumber:
 
-  return roi
+    height, width = img.shape[:2]
 
-def zoomIn(img):
+    rawRoi = img[int(round(height * factor)):int(round(height * (1 - factor))), int(round(width * factor)):int(round(width * (1 - factor)))]
 
-  height, width = img.shape[:2]
+    roi = cv2.resize(rawRoi, (w, h))
 
-  rawRoi = img[int(round(height * zoomFactor)):int(round(height * (1 - zoomFactor))), int(round(width * zoomFactor)):int(round(width * (1 - zoomFactor)))]
+    roiList.append(roi)
 
-  roi = cv2.resize(rawRoi, (w, h))
-    
-  return roi
+    return roi
 
+  else:
+
+    roi = roiList[stageNumber]
+
+    return roi        
+  
 def getCommand():
 
   fileList = os.listdir("info")
@@ -81,76 +79,57 @@ def getCommand():
 
   fileName = file.split("_")
 
-  output = fileName[1]
+  gesture = fileName[1]
 
-  return output
- 
-def showImage(orgImg, img, command):
+  zoomFactor = float(fileName[2])
 
-  if command == "f":
+  return gesture, zoomFactor
 
-    for i in range(3, 0, -1):
+def zoom(img, status, zoomFactor, numberOfStages):
 
-      img = zoomOut(orgImg, i)
+  stageFactor = zoomFactor/numberOfStages
 
-      loadImg = transfunction.transform(img, w, h, xc, yc)
+  if status == "c":
 
-      cv2.imshow("window", loadImg)
-      cv2.waitKey(1)
+    for i in range(1, numberOfStages + 1):
 
-      key = cv2.waitKey(1) & 0xFF
+      newImg = zoomIn(img, i, stageFactor)
 
-      if key == 27:
-        
-        exit()
-      
-      time.sleep(0.1)
-    
-    return img
-  
-  elif command == "c":
-    
-    for i in range(0, 3):
-
-      img = zoomIn(img)
+      img = newImg
 
       loadImg = transfunction.transform(img, w, h, xc, yc)
 
       cv2.imshow("window", loadImg)
+
       cv2.waitKey(1)
-
-      key = cv2.waitKey(1) & 0xFF
-
-      if key == 27:
-        
-        exit()
-      
-      time.sleep(0.1)
 
     return img
 
+  else:
 
+    for i in range(numberOfStages, 0, -1):
+
+      newImg = zoomOut(i)
+
+      loadImg = transfunction.transform(newImg, w, h, xc, yc)
+
+      cv2.imshow("window", loadImg)
+
+      cv2.waitKey(1)
+
+    return newImg
+      
 cv2.namedWindow("window", cv2.WINDOW_NORMAL)
 cv2.setWindowProperty("window", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
-loadImg = transfunction.transform(img, w, h, xc, yc)
+gesture = "c"
+zoomFactor = 0.4
 
-cv2.imshow("window", loadImg)
-cv2.waitKey(1)
+img = zoom(img, gesture, zoomFactor, numberOfStages)
 
-while True:
+time.sleep(1)
 
-  command = getCommand()
+gesture = "f"
+zoomFactor = 0.4
 
-  key = cv2.waitKey(0) & 0xFF
-
-  if key == 27:
-
-    break
-  
-  if command is None:
-
-    continue
-
-  img = showImage(orgImg, img, command)
-  
+img = zoom(img, gesture, zoomFactor, numberOfStages)
