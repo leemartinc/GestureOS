@@ -122,6 +122,14 @@ def zoom(img, status, zoomFactor, numberOfStages):
 cv2.namedWindow("window", cv2.WINDOW_NORMAL)
 cv2.setWindowProperty("window", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
+loadImg = transfunction.transform(img, w, h, xc, yc)
+
+cv2.imshow("window", loadImg)
+
+cv2.waitKey(1000)
+
+time.sleep(0.01)
+
 gesture = "c"
 zoomFactor = 0.4
 
