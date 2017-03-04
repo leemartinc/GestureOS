@@ -28,6 +28,8 @@ time.sleep(1)
 
 diffList = []
 
+zoomFactorList = []
+
 currentStatusChange = None
 lastStatusChange = None
 statusList = []
@@ -76,6 +78,14 @@ while True:
 			for list in doubleList:
 
 				xValues.append(list[0])
+
+		for item in xValues:
+
+                        xValueDifference = xValues[item-1] - xValues[item-2]
+
+                        xValueDiffList.append(xValueDifference)
+
+                del xValueDiffList[0]
 		
 		minimum = min(xValues)
 		maximum = max(xValues)
@@ -90,16 +100,30 @@ while True:
 
 				currentStatusChange = "closer"
 
+                                for item in xValueDiffList:
+
+                                        zoomFactor = xValueDiffList(item-1) / diffList[1]
+
+                                        zoomFactorList.append(zoomFactor)
+
 			elif diffList[1] > diffList[0]:
 
 				currentStatusChange = "farther"
+
+				for item in xValueDiffList:
+
+                                        zoomFactor = "/" + str(xValueDIffList(item-1) / diffList[1])
+
+                                        zoomFactorList.append(zoomFactor)
 
 			else:
 
 				currentStatusChange = "same"
 
 			del diffList[0]
-	
+			xValues = []
+                        xValueDiffList = []
+
 	else:
 
 		currentStatusChange = None
@@ -140,13 +164,17 @@ while True:
 
 		if finalDecision == "farther":
 
-			fileName = "info/" + str(int(time.time())) + "_f"
+                        for item in zoomFactorList:
+
+                                fileName = "info/" + str(int(time.time())) + "_f" + str(zoomFactorList[item-1])
 
 			open(fileName, "a").close()
 		
 		elif finalDecision == "closer":
 
-			fileName = "info/" + str(int(time.time())) + "_c"
+                        for item in zoomFactorList:
+
+                                fileName = "info/" + str(int(time.time())) + "_c" + str(zoomFactorList[item-1])
 
 			open(fileName, "a").close()
 
@@ -156,6 +184,8 @@ while True:
 		statusList = []
 
 		print("Hand gesture detected! Motion is: " + finalDecision)
+
+        zoomFactorList = []
 
 	lastStatusChange = currentStatusChange
 
