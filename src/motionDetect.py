@@ -1,3 +1,18 @@
+"""
+   Copyright 2017 Charlie Liu and Bryan Zhou
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+"""
 from picamera.array import PiRGBArray
 from picamera import PiCamera
 import time
@@ -9,10 +24,9 @@ import cv2
 imgSize= 256
 blurSize = 5
 threshold = 10
-sampleCount = 15
-sampleCutOff = 7
-lowerOutlierCutOff = 75
-upperOutlierCutOff = 225
+sampleSize = 10
+lowerOutlierCutOff = 25
+upperOutlierCutOff = 150
 
 # Camera parameters
 
@@ -39,11 +53,7 @@ filteredWindowOfData = []
 
 #kernel_55 = numpy.ones((5,5), 'uint8')
 frameCount = 1
-dataCount = 0
 fileName = ""
-orgSampleCount = sampleCount
-orgStartPoint = sampleCutOff
-orgEndPoint = sampleCount
 
 # Geting user input for some variables
 
@@ -117,25 +127,17 @@ while True:
 
 		actualDiffList.append(difference)
 
-		if frameCount >= sampleCutOff:
-			
-			if difference > lowerOutlierCutOff and difference < upperOutlierCutOff:
-
-				#print("Data point: " + str(dataCount))
-				#print("Current difference: " + str(difference))
-				dataCount += 1
-
 	else:
 
 		actualDiffList.append(0)
 
 	# Determining the gesture
 
-	if len(actualDiffList) == sampleCount:
+	if len(actualDiffList) % sampleSize == 0:
 
 		# Filtering outliers
 
-		windowOfData = actualDiffList[orgStartPoint - 1 : orgEndPoint]
+		windowOfData = actualDiffList[len(actualDiffList) - sampleSize : len(actualDiffList)]
 		filteredWindowOfData = []
 
 		for item in windowOfData:
@@ -143,12 +145,30 @@ while True:
 			if item > lowerOutlierCutOff and item < upperOutlierCutOff:
 
 				filteredWindowOfData.append(item)
+				filteredDiffList.append(item)
+		
+		if len(filteredWindowOfData) >= 2:
+    			
+			filteredWindowOfData.remove(max(filteredWindowOfData))
+			filteredWindowOfData.remove(min(filteredWindowOfData))
+
+		if len(filteredWindowOfData) <= 1:
+
+			blur1 = blur2
+
+			rawCapture2.truncate(0)
+
+			# Frame counter checks and updates
+
+			if frameCount >= maxFrames:
+
+				break
+
+			frameCount += 1
+			
+			continue
 
 		#print("Length of filteredWindowOfData after filter: " + str(len(filteredWindowOfData)))
-
-		for item in filteredWindowOfData:
-
-				filteredDiffList.append(item)
 		
 		#print("Length of filteredDiffList after adding: " + str(len(filteredDiffList)))
 		
@@ -162,17 +182,31 @@ while True:
 
 			# Making a decision
 
-			if slope < 0:
+			if slope < -0.5:
 
 				statusChange = "closer"
 			
-			elif slope > 0:
+			elif slope > 0.5:
 
 				statusChange = "farther"
 			
 			else:
+    				
+				xAxis = []
 
-				statusChange = "same"
+				blur1 = blur2
+
+				rawCapture2.truncate(0)
+
+				# Frame counter checks and updates
+
+				if frameCount >= maxFrames:
+
+					break
+
+				frameCount += 1
+				
+				continue
 			
 			print("Status change: " + statusChange)
 
@@ -189,30 +223,12 @@ while True:
 				fileName = "info/" + str(int(time.time())) + "_f" + "_0.4" ### CHANGE THIS HARDCODED VALUE!!!
 				
 				open(fileName, "w").close()
-			
-		# Evaluating some variables for the next iteration
-			
-		newEndPoint = orgEndPoint - orgStartPoint + orgEndPoint + 1
-			
-		newStartPoint = orgEndPoint + 1
-
-		orgEndPoint = newEndPoint
-
-		orgStartPoint = newStartPoint
-
-		sampleCount += orgSampleCount
 
 		xAxis = []
 
 	blur1 = blur2
 
 	rawCapture2.truncate(0)
-
-	# DEBUG: Saving the last image
-
-	if frameCount == maxFrames - 1:
-
-		cv2.imwrite("last.jpg", frame2)
 
 	# Frame counter checks and updates
 
@@ -223,6 +239,8 @@ while True:
 	frameCount += 1
 
 # Preparing the data and adding it to the debug file
+
+xAxis = []
 	
 for i in range(0, len(actualDiffList)):
 

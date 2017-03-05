@@ -26,7 +26,7 @@ h = screenres.height
 xc = 0.3
 yc = 0.8
 
-numberOfStages = 1
+numberOfStages = 2
 
 rawImg = cv2.imread("image.jpg")
 
@@ -89,9 +89,6 @@ def getCommand():
   if zoomFactor == None:
 
     zoomFactor = "none"
-
-  print("gesture: " + str(gesture))
-  print("zoomfactor: " + str(zoomFactor))
 
   return gesture, zoomFactor
 
