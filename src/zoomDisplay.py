@@ -1,16 +1,18 @@
 """
    Copyright 2017 Charlie Liu and Bryan Zhou
+
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
+
        http://www.apache.org/licenses/LICENSE-2.0
+
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
 """
-
 from transfunction import transfunction
 from screenres import screenres
 import time
@@ -24,7 +26,7 @@ h = screenres.height
 xc = 0.3
 yc = 0.8
 
-numberOfStages = 20
+numberOfStages = 1
 
 rawImg = cv2.imread("image.jpg")
 
@@ -64,7 +66,7 @@ def getCommand():
 
   if len(fileList) == 0:
 
-    return None
+    return "none", "none"
 
   for file in fileList:
 
@@ -79,6 +81,17 @@ def getCommand():
   gesture = fileName[1]
 
   zoomFactor = float(fileName[2])
+
+  if gesture == None:
+
+    gesture = "none"
+
+  if zoomFactor == None:
+
+    zoomFactor = "none"
+
+  print("gesture: " + str(gesture))
+  print("zoomfactor: " + str(zoomFactor))
 
   return gesture, zoomFactor
 
@@ -127,14 +140,18 @@ cv2.waitKey(1000)
 
 time.sleep(0.01)
 
-gesture = "c"
-zoomFactor = 0.4
+while True:
 
-img = zoom(img, gesture, zoomFactor, numberOfStages)
+  gesture, zoomFactor = getCommand()
 
-time.sleep(1)
+  if gesture == "none" or zoomFactor == "none":
 
-gesture = "f"
-zoomFactor = 0.4
+    continue
 
-img = zoom(img, gesture, zoomFactor, numberOfStages)
+  key = cv2.waitKey(1) & 0xFF
+
+  if key == 27:
+
+    break
+  
+  img = zoom(img, gesture, zoomFactor, numberOfStages)
