@@ -13,7 +13,6 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 """
-
 from transfunction import transfunction
 from screenres import screenres
 import time
@@ -27,7 +26,7 @@ h = screenres.height
 xc = 0.3
 yc = 0.8
 
-numberOfStages = 20
+numberOfStages = 1
 
 rawImg = cv2.imread("image.jpg")
 
@@ -67,7 +66,7 @@ def getCommand():
 
   if len(fileList) == 0:
 
-    return None
+    return "none", "none"
 
   for file in fileList:
 
@@ -82,6 +81,17 @@ def getCommand():
   gesture = fileName[1]
 
   zoomFactor = float(fileName[2])
+
+  if gesture == None:
+
+    gesture = "none"
+
+  if zoomFactor == None:
+
+    zoomFactor = "none"
+
+  print("gesture: " + str(gesture))
+  print("zoomfactor: " + str(zoomFactor))
 
   return gesture, zoomFactor
 
@@ -122,14 +132,26 @@ def zoom(img, status, zoomFactor, numberOfStages):
 cv2.namedWindow("window", cv2.WINDOW_NORMAL)
 cv2.setWindowProperty("window", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
-gesture = "c"
-zoomFactor = 0.4
+loadImg = transfunction.transform(img, w, h, xc, yc)
 
-img = zoom(img, gesture, zoomFactor, numberOfStages)
+cv2.imshow("window", loadImg)
 
-time.sleep(1)
+cv2.waitKey(1000)
 
-gesture = "f"
-zoomFactor = 0.4
+time.sleep(0.01)
 
-img = zoom(img, gesture, zoomFactor, numberOfStages)
+while True:
+
+  gesture, zoomFactor = getCommand()
+
+  if gesture == "none" or zoomFactor == "none":
+
+    continue
+
+  key = cv2.waitKey(1) & 0xFF
+
+  if key == 27:
+
+    break
+  
+  img = zoom(img, gesture, zoomFactor, numberOfStages)
