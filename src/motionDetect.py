@@ -1,101 +1,66 @@
+"""
+   Copyright 2017 Charlie Liu and Bryan Zhou
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+       http://www.apache.org/licenses/LICENSE-2.0
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+"""
+
 from picamera.array import PiRGBArray
 from picamera import PiCamera
 import time
-import numpy
 import cv2
 
-# User defined experimental values
-
-imgSize= 256
-blurSize = 5
-threshold = 10
-sampleCount = 15
-sampleCutOff = 7
-lowerOutlierCutOff = 75
-upperOutlierCutOff = 225
-
-# Camera parameters
-
 camera = PiCamera()
-camera.resolution = (imgSize,imgSize)
-camera.color_effects = (128, 128)
+camera.resolution = (256, 256)
 rawCapture1 = PiRGBArray(camera, size = camera.resolution)
 rawCapture2 = PiRGBArray(camera, size = camera.resolution)
 
-time.sleep(0.1)
-
-# Initializing detection variables
-
-firstFrame = None
-currentStatusChange = None
-
-xAxis = []
-actualDiffList = []
-filteredDiffList = []
-windowOfData = []
-filteredWindowOfData = []
-
-# Additional variables to define
-
-#kernel_55 = numpy.ones((5,5), 'uint8')
-frameCount = 1
-dataCount = 0
-fileName = ""
-orgSampleCount = sampleCount
-orgStartPoint = sampleCutOff
-orgEndPoint = sampleCount
-
-# Geting user input for some variables
-
-maxFrames = int(input("Number of max frames?: "))
-
 time.sleep(1)
 
-# Taking the first capture
+diffList = []
+
+zoomFactorList = []
+
+currentStatusChange = None
+lastStatusChange = None
+statusList = []
+
+inMotion = False
+
+fartherCount = 0
+closerCount = 0
+
+finalDecision = None
 
 camera.capture(rawCapture1, format = "bgr", use_video_port = True)
+
 frame1 = rawCapture1.array
-gray1= cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
-blur1 = cv2.GaussianBlur(gray1, (blurSize, blurSize), 0)
+
+gray1 = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
+
+blur1 = cv2.GaussianBlur(gray1, (5, 5), 0)
 
 rawCapture1.truncate(0)
 
-# Opening the data file
-
-rawFile = open("data-raw.csv", "w")
-filteredFile = open("data-filtered.csv", "w")
-
-# Detection loop
-
 while True:
-
-	#print("Actual frame: " + str(frameCount))
-	
-	# Capturing a frame and modifying it
 
 	camera.capture(rawCapture2, format = "bgr", use_video_port = True)
 	
 	frame2 = rawCapture2.array
+
 	gray2 = cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY)
-	blur2 = cv2.GaussianBlur(gray2, (blurSize, blurSize), 0)
-	
+
+	blur2 = cv2.GaussianBlur(gray2, (5, 5), 0)
+
 	diffImg = cv2.absdiff(blur1, blur2)
 
-	thresh = cv2.threshold(diffImg, threshold, 255, cv2.THRESH_BINARY)[1]
-
-	#thresh = cv2.dilate(thresh, kernel_55)
-	#thresh = cv2.dilate(thresh, kernel_55)
-	#thresh = cv2.erode(thresh, kernel_55)
-	
-	#im2, contours, hierarchy = cv2.findContours(thresh,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
-	#thresh = cv2.drawContours(thresh, contours, -1, (0,255,0), 3)
-
-	# DEBUG: Showing the modified image
-
-	#cv2.imshow("window", thresh)
-	#cv2.waitKey(1)
-
-	# Finding the farthest white points
+	thresh = cv2.threshold(diffImg, 20, 255, cv2.THRESH_BINARY)[1]
 
 	whitePoints = cv2.findNonZero(thresh)
 
@@ -103,141 +68,124 @@ while True:
 
 		whitePoints = cv2.findNonZero(thresh).tolist()
 
-		whitePointXValues = []
+		xValues = []
 
 		for doubleList in whitePoints:
 
 			for list in doubleList:
 
-				whitePointXValues.append(list[0])
+				xValues.append(list[0])
 
-		minimum = min(whitePointXValues)
-		maximum = max(whitePointXValues)
+		for item in xValues:
+
+                        xValueDifference = xValues[item-1] - xValues[item-2]
+
+                        xValueDiffList.append(xValueDifference)
+
+                del xValueDiffList[0]
+		
+		minimum = min(xValues)
+		maximum = max(xValues)
+
 		difference = maximum - minimum
 
-		actualDiffList.append(difference)
+		diffList.append(difference)
 
-		if frameCount >= sampleCutOff:
-			
-			if difference > lowerOutlierCutOff and difference < upperOutlierCutOff:
+		if len(diffList) != 1:
 
-				#print("Data point: " + str(dataCount))
-				#print("Current difference: " + str(difference))
-				dataCount += 1
+			if diffList[1] < diffList[0]:
+
+				currentStatusChange = "closer"
+
+                                for item in xValueDiffList:
+
+                                        zoomFactor = xValueDiffList(item-1) / diffList[1]
+
+                                        zoomFactorList.append(zoomFactor)
+
+			elif diffList[1] > diffList[0]:
+
+				currentStatusChange = "farther"
+
+				for item in xValueDiffList:
+
+                                        zoomFactor = "/" + str(xValueDIffList(item-1) / diffList[1])
+
+                                        zoomFactorList.append(zoomFactor)
+
+			else:
+
+				currentStatusChange = "same"
+
+			del diffList[0]
+			xValues = []
+                        xValueDiffList = []
 
 	else:
 
-		actualDiffList.append(0)
+		currentStatusChange = None
+	
+	if inMotion is True:
 
-	# Determining the gesture
-
-	if len(actualDiffList) == sampleCount:
-
-		# Filtering outliers
-
-		windowOfData = actualDiffList[orgStartPoint - 1 : orgEndPoint]
-		filteredWindowOfData = []
-
-		for item in windowOfData:
-
-			if item > lowerOutlierCutOff and item < upperOutlierCutOff:
-
-				filteredWindowOfData.append(item)
-
-		#print("Length of filteredWindowOfData after filter: " + str(len(filteredWindowOfData)))
-
-		for item in filteredWindowOfData:
-
-				filteredDiffList.append(item)
+		statusList.append(currentStatusChange)
 		
-		#print("Length of filteredDiffList after adding: " + str(len(filteredDiffList)))
+	if lastStatusChange is None and currentStatusChange is not None:
+	
+		inMotion = True
+
+	elif lastStatusChange is not None and currentStatusChange is None:
+
+		inMotion = False
+
+		for status in statusList:
+
+			if status == "farther":
+
+				fartherCount += 1
+
+			elif status == "closer":
+
+				closerCount += 1
+
+		if fartherCount > closerCount:
+
+			finalDecision = "farther"
+
+		elif closerCount > fartherCount:
+
+			finalDecision = "closer"
 		
-		for i in range(1, len(filteredWindowOfData) + 1):
+		else:
 
-			xAxis.append(i)
+			finalDecision = "unsure"
+
+		if finalDecision == "farther":
+
+                        for item in zoomFactorList:
+
+                                fileName = "info/" + str(int(time.time())) + "_f" + str(zoomFactorList[item-1])
+
+			open(fileName, "a").close()
 		
-		if len(filteredWindowOfData) > 0:
-		
-			slope = numpy.polyfit(xAxis, filteredWindowOfData, 1)[0]
+		elif finalDecision == "closer":
 
-			# Making a decision
+                        for item in zoomFactorList:
 
-			if slope < 0:
+                                fileName = "info/" + str(int(time.time())) + "_c" + str(zoomFactorList[item-1])
 
-				statusChange = "closer"
-			
-			elif slope > 0:
+			open(fileName, "a").close()
 
-				statusChange = "farther"
-			
-			else:
+		fartherCount = 0
+		closerCount = 0
 
-				statusChange = "same"
-			
-			print("Status change: " + statusChange)
+		statusList = []
 
-			# Writing to the data file
-			
-			if statusChange == "closer":
+		print("Hand gesture detected! Motion is: " + finalDecision)
 
-				fileName = "info/" + str(int(time.time())) + "_c" + "_0.4" ### CHANGE THIS HARDCODED VALUE!!!
+        zoomFactorList = []
 
-				open(fileName, "w").close()
-
-			elif statusChange == "farther":
-
-				fileName = "info/" + str(int(time.time())) + "_f" + "_0.4" ### CHANGE THIS HARDCODED VALUE!!!
-				
-				open(fileName, "w").close()
-			
-		# Evaluating some variables for the next iteration
-			
-		newEndPoint = orgEndPoint - orgStartPoint + orgEndPoint + 1
-			
-		newStartPoint = orgEndPoint + 1
-
-		orgEndPoint = newEndPoint
-
-		orgStartPoint = newStartPoint
-
-		sampleCount += orgSampleCount
-
-		xAxis = []
+	lastStatusChange = currentStatusChange
 
 	blur1 = blur2
 
 	rawCapture2.truncate(0)
-
-	# DEBUG: Saving the last image
-
-	if frameCount == maxFrames - 1:
-
-		cv2.imwrite("last.jpg", frame2)
-
-	# Frame counter checks and updates
-
-	if frameCount >= maxFrames:
-
-		break
-
-	frameCount += 1
-
-# Preparing the data and adding it to the debug file
-	
-for i in range(0, len(actualDiffList)):
-
-	xAxis.append(i)
-
-for i in range(0, len(actualDiffList)):
-
-	rawFile.write(str(xAxis[i]) + ", " + str(actualDiffList[i]) +  "\n")
-
-xAxis = []
-
-for i in range(0, len(filteredDiffList)):
-
-	xAxis.append(i)
-
-for i in range(0, len(filteredDiffList)):
-
-	filteredFile.write(str(xAxis[i]) + ", " + str(filteredDiffList[i]) +  "\n")
