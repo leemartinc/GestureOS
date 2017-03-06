@@ -17,47 +17,49 @@ from transfunction import transfunction
 from screenres import screenres
 import time
 import cv2
-import sys
 import os
 
-w = screenres.width
-h = screenres.height
+### CUSTOMIZABLE VARIABLES ###
 
 xc = 0.3
 yc = 0.8
 
 numberOfStages = 2
 
-stageNumber = 0
+#----------------------------#
 
+# Initializing variables
+w = screenres.width
+h = screenres.height
+
+stageNumber = 0
 lastTime = ""
 
+# Preparing the initial image and ROI database
 rawImg = cv2.imread("image.jpg")
-
 img = cv2.resize(rawImg, (w, h))
-
 roiList = [img]
 
+# Zooming out
 def zoomOut(stageNumber):
 
-  if stageNumber == 0:
+  if stageNumber <= 0:
 
-    roi = roiList[stageNumber]
+    roi = roiList[0]
 
-    return roi, stageNumber
+    return roi, 0
 
   roi = roiList[stageNumber - 1]
 
   return roi, stageNumber
 
+# Zooming in
 def zoomIn(img, stageNumber, factor):
   
   if len(roiList) <= stageNumber:
 
     height, width = img.shape[:2]
-
     rawRoi = img[int(round(height * factor)):int(round(height * (1 - factor))), int(round(width * factor)):int(round(width * (1 - factor)))]
-
     roi = cv2.resize(rawRoi, (w, h))
 
     roiList.append(roi)
@@ -69,7 +71,8 @@ def zoomIn(img, stageNumber, factor):
     roi = roiList[stageNumber]
 
     return roi, stageNumber
-  
+
+# Fetching data from the pipe
 def getCommand(lastTime):
 
   fileList = os.listdir("info")
@@ -83,9 +86,7 @@ def getCommand(lastTime):
     os.remove("info/" + file)
 
   fileList.sort()
-
   file = fileList[-1]
-
   fileName = file.split("_")
 
   time = fileName[0]
@@ -95,7 +96,6 @@ def getCommand(lastTime):
       return "none", "none", time
 
   gesture = fileName[1]
-
   zoomFactor = float(fileName[2])
 
   if gesture == None:
@@ -108,6 +108,7 @@ def getCommand(lastTime):
 
   return gesture, zoomFactor, time
 
+# Zooming in/out based on pipe data
 def zoom(img, status, zoomFactor, currentStage, numberOfStages):
 
   stageFactor = zoomFactor/numberOfStages
@@ -117,13 +118,9 @@ def zoom(img, status, zoomFactor, currentStage, numberOfStages):
     for i in range(currentStage + 1, currentStage + numberOfStages + 1):
 
       newImg, stageNumber = zoomIn(img, i, stageFactor)
-
       img = newImg
-
       loadImg = transfunction.transform(img, w, h, xc, yc)
-
       cv2.imshow("window", loadImg)
-
       cv2.waitKey(1)
 
     return img, stageNumber
@@ -133,51 +130,25 @@ def zoom(img, status, zoomFactor, currentStage, numberOfStages):
     for i in range(currentStage - 1, currentStage - numberOfStages - 1, -1):
 
       newImg, stageNumber = zoomOut(i)
-
       loadImg = transfunction.transform(newImg, w, h, xc, yc)
-
       cv2.imshow("window", loadImg)
-
       cv2.waitKey(1)
 
     return newImg, stageNumber
-      
+  
+# Setting full-screen property and nullifying the infamous startup bug
 cv2.namedWindow("window", cv2.WINDOW_NORMAL)
 cv2.setWindowProperty("window", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
-
 loadImg = transfunction.transform(img, w, h, xc, yc)
-
 cv2.imshow("window", loadImg)
-
 cv2.waitKey(1000)
-
 time.sleep(0.01)
 
-"""gesture = "c"
-zoomFactor = 0.4
-img, stageNumber = zoom(img, gesture, zoomFactor, 0, numberOfStages)
-img, stageNumber = zoom(img, gesture, zoomFactor, stageNumber, numberOfStages)
-img, stageNumber = zoom(img, gesture, zoomFactor, stageNumber, numberOfStages)
-
-time.sleep(1)
-gesture = "f"
-img, stageNumber = zoom(img, gesture, zoomFactor, stageNumber, numberOfStages)
-img, stageNumber = zoom(img, gesture, zoomFactor, stageNumber, numberOfStages)
-
-time.sleep(1)
-gesture = "c"
-img, stageNumber = zoom(img, gesture, zoomFactor, stageNumber, numberOfStages)
-
-time.sleep(1)
-gesture = "f"
-img, stageNumber = zoom(img, gesture, zoomFactor, stageNumber, numberOfStages)
-img, stageNumber = zoom(img, gesture, zoomFactor, stageNumber, numberOfStages)
-
-time.sleep(1)"""
+# Running the actual process
 while True:
-
+  
   key = cv2.waitKey(1) & 0xFF
-
+  
   if key == 27:
 
     break

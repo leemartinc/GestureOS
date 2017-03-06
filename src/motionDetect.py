@@ -15,54 +15,42 @@
 """
 from picamera.array import PiRGBArray
 from picamera import PiCamera
-import time
 import numpy
+import time
 import cv2
 
-# User defined experimental values
+### CUSTOMIZABLE VARIABLES ###
 
 imgSize= 256
 blurSize = 5
 threshold = 10
+
 sampleSize = 10
 lowerOutlierCutOff = 25
 upperOutlierCutOff = 150
 
-# Camera parameters
+epsilon = 0.5
 
-camera = PiCamera()
-camera.resolution = (imgSize,imgSize)
-camera.color_effects = (128, 128)
-rawCapture1 = PiRGBArray(camera, size = camera.resolution)
-rawCapture2 = PiRGBArray(camera, size = camera.resolution)
+zoomFactor = 0.4
 
-time.sleep(0.1)
+#----------------------------#
 
-# Initializing detection variables
-
-firstFrame = None
-currentStatusChange = None
-
+# Initializing lists
 xAxis = []
 actualDiffList = []
 filteredDiffList = []
 windowOfData = []
 filteredWindowOfData = []
 
-# Additional variables to define
+# Camera settings
+camera = PiCamera()
+camera.resolution = (imgSize,imgSize)
+rawCapture1 = PiRGBArray(camera, size = camera.resolution)
+rawCapture2 = PiRGBArray(camera, size = camera.resolution)
 
-#kernel_55 = numpy.ones((5,5), 'uint8')
-frameCount = 1
-fileName = ""
+time.sleep(0.1)
 
-# Geting user input for some variables
-
-maxFrames = int(input("Number of max frames?: "))
-
-time.sleep(1)
-
-# Taking the first capture
-
+# Capturing the first frame
 camera.capture(rawCapture1, format = "bgr", use_video_port = True)
 frame1 = rawCapture1.array
 gray1= cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
@@ -70,43 +58,18 @@ blur1 = cv2.GaussianBlur(gray1, (blurSize, blurSize), 0)
 
 rawCapture1.truncate(0)
 
-# Opening the data file
-
-rawFile = open("data-raw.csv", "w")
-filteredFile = open("data-filtered.csv", "w")
-
-# Detection loop
-
 while True:
 
-	#print("Actual frame: " + str(frameCount))
-	
-	# Capturing a frame and modifying it
-
+	# Capturing and processing a frame
 	camera.capture(rawCapture2, format = "bgr", use_video_port = True)
-	
 	frame2 = rawCapture2.array
+
 	gray2 = cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY)
 	blur2 = cv2.GaussianBlur(gray2, (blurSize, blurSize), 0)
-	
 	diffImg = cv2.absdiff(blur1, blur2)
-
 	thresh = cv2.threshold(diffImg, threshold, 255, cv2.THRESH_BINARY)[1]
 
-	#thresh = cv2.dilate(thresh, kernel_55)
-	#thresh = cv2.dilate(thresh, kernel_55)
-	#thresh = cv2.erode(thresh, kernel_55)
-	
-	#im2, contours, hierarchy = cv2.findContours(thresh,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
-	#thresh = cv2.drawContours(thresh, contours, -1, (0,255,0), 3)
-
-	# DEBUG: Showing the modified image
-
-	#cv2.imshow("window", thresh)
-	#cv2.waitKey(1)
-
-	# Finding the farthest white points
-
+	# Finding white points, calculating their difference, and adding the value
 	whitePoints = cv2.findNonZero(thresh)
 
 	if whitePoints is not None:
@@ -131,15 +94,14 @@ while True:
 
 		actualDiffList.append(0)
 
-	# Determining the gesture
-
+	# Analyzing the data gathered
 	if len(actualDiffList) % sampleSize == 0:
 
-		# Filtering outliers
-
+		# Determining the window of data
 		windowOfData = actualDiffList[len(actualDiffList) - sampleSize : len(actualDiffList)]
 		filteredWindowOfData = []
 
+		# Filtering the window of data
 		for item in windowOfData:
 
 			if item > lowerOutlierCutOff and item < upperOutlierCutOff:
@@ -152,94 +114,75 @@ while True:
 			filteredWindowOfData.remove(max(filteredWindowOfData))
 			filteredWindowOfData.remove(min(filteredWindowOfData))
 
+		# Ignoring the data if too little
 		if len(filteredWindowOfData) <= 1:
 
 			blur1 = blur2
-
 			rawCapture2.truncate(0)
-
-			# Frame counter checks and updates
-
-			if frameCount >= maxFrames:
-
-				break
-
-			frameCount += 1
 			
 			continue
 
-		#print("Length of filteredWindowOfData after filter: " + str(len(filteredWindowOfData)))
-		
-		#print("Length of filteredDiffList after adding: " + str(len(filteredDiffList)))
-		
+		# Creating an x-axis for the linear regression
 		for i in range(1, len(filteredWindowOfData) + 1):
 
 			xAxis.append(i)
 		
+		# Finding the slope of the linear regression if possible
 		if len(filteredWindowOfData) > 0:
 		
 			slope = numpy.polyfit(xAxis, filteredWindowOfData, 1)[0]
 
-			# Making a decision
-
-			if slope < -0.5:
+			# Making a decision based on the slope's value
+			if slope < -epsilon:
 
 				statusChange = "closer"
 			
-			elif slope > 0.5:
+			elif slope > epsilon:
 
 				statusChange = "farther"
-			
+
 			else:
     				
 				xAxis = []
-
 				blur1 = blur2
-
 				rawCapture2.truncate(0)
 
-				# Frame counter checks and updates
-
-				if frameCount >= maxFrames:
-
-					break
-
-				frameCount += 1
-				
 				continue
 			
-			print("Status change: " + statusChange)
+			# DEBUG: Printing out the decision
+			print("[INFO] Gesture detected: " + statusChange)
 
-			# Writing to the data file
-			
+			# Passing the decision through the pipe
 			if statusChange == "closer":
 
-				fileName = "info/" + str(int(time.time())) + "_c" + "_0.4" ### CHANGE THIS HARDCODED VALUE!!!
+				fileName = "info/" + str(int(time.time())) + "_c" + "_" + str(zoomFactor)
 
 				open(fileName, "w").close()
 
 			elif statusChange == "farther":
 
-				fileName = "info/" + str(int(time.time())) + "_f" + "_0.4" ### CHANGE THIS HARDCODED VALUE!!!
+				fileName = "info/" + str(int(time.time())) + "_f" + "_" + str(zoomFactor)
 				
 				open(fileName, "w").close()
 
+		# Reseting variables for the next iteration
 		xAxis = []
 
 	blur1 = blur2
-
 	rawCapture2.truncate(0)
 
-	# Frame counter checks and updates
-
-	if frameCount >= maxFrames:
-
+	# Exit the loop if Esc pressed
+	key = cv2.waitKey(1) & 0xFF
+	
+	if key == 27:
+		
 		break
+		
+# Opening the data files
+rawFile = open("data-raw.csv", "w")
+filteredFile = open("data-filtered.csv", "w")
 
-	frameCount += 1
-
-# Preparing the data and adding it to the debug file
-
+# Writing the raw data file
 xAxis = []
 	
 for i in range(0, len(actualDiffList)):
@@ -250,6 +193,7 @@ for i in range(0, len(actualDiffList)):
 
 	rawFile.write(str(xAxis[i]) + ", " + str(actualDiffList[i]) +  "\n")
 
+# Writing the filtered data file
 xAxis = []
 
 for i in range(0, len(filteredDiffList)):
