@@ -28,6 +28,10 @@ yc = 0.8
 
 numberOfStages = 2
 
+stageNumber = 0
+
+lastTime = ""
+
 rawImg = cv2.imread("image.jpg")
 
 img = cv2.resize(rawImg, (w, h))
@@ -36,9 +40,15 @@ roiList = [img]
 
 def zoomOut(stageNumber):
 
+  if stageNumber == 0:
+
+    roi = roiList[stageNumber]
+
+    return roi, stageNumber
+
   roi = roiList[stageNumber - 1]
 
-  return roi
+  return roi, stageNumber
 
 def zoomIn(img, stageNumber, factor):
   
@@ -52,21 +62,21 @@ def zoomIn(img, stageNumber, factor):
 
     roiList.append(roi)
 
-    return roi
+    return roi, stageNumber
 
   else:
 
     roi = roiList[stageNumber]
 
-    return roi        
+    return roi, stageNumber
   
-def getCommand():
+def getCommand(lastTime):
 
   fileList = os.listdir("info")
 
   if len(fileList) == 0:
 
-    return "none", "none"
+    return "none", "none", "none"
 
   for file in fileList:
 
@@ -77,6 +87,12 @@ def getCommand():
   file = fileList[-1]
 
   fileName = file.split("_")
+
+  time = fileName[0]
+
+  if time == lastTime:
+        
+      return "none", "none", time
 
   gesture = fileName[1]
 
@@ -90,17 +106,17 @@ def getCommand():
 
     zoomFactor = "none"
 
-  return gesture, zoomFactor
+  return gesture, zoomFactor, time
 
-def zoom(img, status, zoomFactor, numberOfStages):
+def zoom(img, status, zoomFactor, currentStage, numberOfStages):
 
   stageFactor = zoomFactor/numberOfStages
 
-  if status == "c":
+  if status == "f":
 
-    for i in range(1, numberOfStages + 1):
+    for i in range(currentStage + 1, currentStage + numberOfStages + 1):
 
-      newImg = zoomIn(img, i, stageFactor)
+      newImg, stageNumber = zoomIn(img, i, stageFactor)
 
       img = newImg
 
@@ -110,13 +126,13 @@ def zoom(img, status, zoomFactor, numberOfStages):
 
       cv2.waitKey(1)
 
-    return img
+    return img, stageNumber
 
   else:
 
-    for i in range(numberOfStages, 0, -1):
+    for i in range(currentStage - 1, currentStage - numberOfStages - 1, -1):
 
-      newImg = zoomOut(i)
+      newImg, stageNumber = zoomOut(i)
 
       loadImg = transfunction.transform(newImg, w, h, xc, yc)
 
@@ -124,7 +140,7 @@ def zoom(img, status, zoomFactor, numberOfStages):
 
       cv2.waitKey(1)
 
-    return newImg
+    return newImg, stageNumber
       
 cv2.namedWindow("window", cv2.WINDOW_NORMAL)
 cv2.setWindowProperty("window", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
@@ -137,18 +153,39 @@ cv2.waitKey(1000)
 
 time.sleep(0.01)
 
+"""gesture = "c"
+zoomFactor = 0.4
+img, stageNumber = zoom(img, gesture, zoomFactor, 0, numberOfStages)
+img, stageNumber = zoom(img, gesture, zoomFactor, stageNumber, numberOfStages)
+img, stageNumber = zoom(img, gesture, zoomFactor, stageNumber, numberOfStages)
+
+time.sleep(1)
+gesture = "f"
+img, stageNumber = zoom(img, gesture, zoomFactor, stageNumber, numberOfStages)
+img, stageNumber = zoom(img, gesture, zoomFactor, stageNumber, numberOfStages)
+
+time.sleep(1)
+gesture = "c"
+img, stageNumber = zoom(img, gesture, zoomFactor, stageNumber, numberOfStages)
+
+time.sleep(1)
+gesture = "f"
+img, stageNumber = zoom(img, gesture, zoomFactor, stageNumber, numberOfStages)
+img, stageNumber = zoom(img, gesture, zoomFactor, stageNumber, numberOfStages)
+
+time.sleep(1)"""
 while True:
-
-  gesture, zoomFactor = getCommand()
-
-  if gesture == "none" or zoomFactor == "none":
-
-    continue
 
   key = cv2.waitKey(1) & 0xFF
 
   if key == 27:
 
     break
+
+  gesture, zoomFactor, lastTime = getCommand(lastTime)
+
+  if gesture == "none" or zoomFactor == "none" or lastTime == "none":
+
+    continue
   
-  img = zoom(img, gesture, zoomFactor, numberOfStages)
+  img, stageNumber = zoom(img, gesture, zoomFactor, stageNumber, numberOfStages)
