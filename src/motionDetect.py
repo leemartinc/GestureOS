@@ -34,7 +34,7 @@ lowerOutlierCutOff = 25
 upperOutlierCutOff = 150
 
 xEpsilon = 0.5
-yEpsilon = int(0.15 * imgSize)
+yEpsilon = int(0.25 * imgSize)
 
 zoomFactor = 0.4
 
@@ -181,6 +181,8 @@ while True:
 
 		# Finding the difference between the maximum and minimum y value
 		yData = max(filteredYWindow) - min(filteredYWindow)
+
+		print(yData)
 
 		# Making a decision based on the data values
 		if yData > yEpsilon:
