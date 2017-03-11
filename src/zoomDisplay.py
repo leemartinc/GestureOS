@@ -125,7 +125,7 @@ def zoom(img, status, zoomFactor, currentStage, numberOfStages):
 
     return img, stageNumber
 
-  else:
+  elif status == "c":
 
     for i in range(currentStage - 1, currentStage - numberOfStages - 1, -1):
 
@@ -135,7 +135,23 @@ def zoom(img, status, zoomFactor, currentStage, numberOfStages):
       cv2.waitKey(1)
 
     return newImg, stageNumber
-  
+
+  elif status == "r":
+
+    newImg = roiList[0]
+    stageNumber = 0
+    loadImg = transfunction.transform(newImg, w, h, xc, yc)
+    cv2.imshow("window", loadImg)
+    cv2.waitKey(1)
+
+    time.sleep(2.5)
+
+    return newImg, stageNumber
+    
+  else:
+    
+    print("[ERROR] Decision not possible!")
+
 # Setting full-screen property and nullifying the infamous startup bug
 cv2.namedWindow("window", cv2.WINDOW_NORMAL)
 cv2.setWindowProperty("window", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
