@@ -26,7 +26,7 @@ blurSize = 5
 threshold = 10
 
 sampleSize = 10
-ignore = 5
+ignore = 10
 
 zeroLimit = 8
 
@@ -34,7 +34,7 @@ lowerOutlierCutOff = 25
 upperOutlierCutOff = 150
 
 xEpsilon = 0.5
-yEpsilon = 35
+yEpsilon = int(0.15 * imgSize)
 
 zoomFactor = 0.4
 
@@ -75,8 +75,6 @@ while True:
 	if frameCount <= ignore:
 
 		continue
-
-	### TEMP ###
 
 	if frameCount > limit:
 
@@ -183,7 +181,6 @@ while True:
 
 		# Finding the difference between the maximum and minimum y value
 		yData = max(filteredYWindow) - min(filteredYWindow)
-		print(yData)
 
 		# Making a decision based on the data values
 		if yData > yEpsilon:
@@ -211,7 +208,7 @@ while True:
 			
 			print("[ERROR] Decision not possible!")
 			
-		# DEBUG: Printing out the decision
+		# Printing out the decision
 		print("[INFO] Gesture detected: " + statusChange)
 
 		# Passing the decision through the pipe

@@ -111,9 +111,9 @@ def getCommand(lastTime):
 # Zooming in/out based on pipe data
 def zoom(img, status, zoomFactor, currentStage, numberOfStages):
 
-  stageFactor = zoomFactor/numberOfStages
-
   if status == "f":
+
+    stageFactor = zoomFactor/numberOfStages
 
     for i in range(currentStage + 1, currentStage + numberOfStages + 1):
 
@@ -144,7 +144,7 @@ def zoom(img, status, zoomFactor, currentStage, numberOfStages):
     cv2.imshow("window", loadImg)
     cv2.waitKey(1)
 
-    time.sleep(2.5)
+    time.sleep(1.5)
 
     return newImg, stageNumber
     
