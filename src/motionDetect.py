@@ -13,43 +13,45 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 """
+
 from picamera.array import PiRGBArray
 from picamera import PiCamera
 import numpy
 import time
 import cv2
 
-### CUSTOMIZABLE VARIABLES ###
+#--- Adjustable Parameters ---#
 
 imgSize= 256
-blurSize = 5
-threshold = 10
 
-sampleSize = 10
-ignore = 10
+blurRegion = 5
 
-zeroLimit = 8
+pixelThreshold = 10
 
-lowerOutlierCutOff = 25
+dataSampleSize = 10
+
+framesToIgnore = 10
+
+lowerOutlierLimit = 25
 upperOutlierCutOff = 150
 
-xEpsilon = 0.5
-yEpsilon = int(0.25 * imgSize)
+xDataThreshold = 0.5
+yDataThreshold = int(0.25 * imgSize)
 
 zoomFactor = 0.4
 
-#----------------------------#
-
-##### TEMP #####
-limit = int(input("Limit?"))
-
-# Initializing lists and a frame count
 frameCount = 0
-actualDiffList = []
-filteredDiffList = []
-yList = []
-windowOfData = []
-yWindow = []
+
+frameCountLimit = int(input("Enter a frame count limit: "))
+
+# Initializing lists
+
+xData = []
+xDataSample = []
+xDataFiltered = []
+
+yData = []
+yDataSample = []
 
 # Camera settings
 camera = PiCamera()
@@ -59,11 +61,12 @@ rawCapture2 = PiRGBArray(camera, size = camera.resolution)
 
 time.sleep(0.1)
 
-# Capturing the first frame
+# Capturing and processing the first frame
 camera.capture(rawCapture1, format = "bgr", use_video_port = True)
-frame1 = rawCapture1.array
-gray1 = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
-blur1 = cv2.GaussianBlur(gray1, (blurSize, blurSize), 0)
+rawFrame1 = rawCapture1.array
+
+grayFrame1 = cv2.cvtColor(rawFrame1, cv2.COLOR_BGR2GRAY)
+blurFrame1 = cv2.GaussianBlur(grayFrame1, (blurRegion, blurRegion), 0)
 
 rawCapture1.truncate(0)
 	
@@ -76,25 +79,25 @@ while True:
 
 		continue
 
-	if frameCount > limit:
+	if frameCount > frameCountLimit:
 
 		break
 
-	# Capturing and processing a frame
+	# Capturing and processing another frame
 	camera.capture(rawCapture2, format = "bgr", use_video_port = True)
-	frame2 = rawCapture2.array
+	rawFrame2 = rawCapture2.array
 
-	gray2 = cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY)
-	blur2 = cv2.GaussianBlur(gray2, (blurSize, blurSize), 0)
-	diffImg = cv2.absdiff(blur1, blur2)
-	thresh = cv2.threshold(diffImg, threshold, 255, cv2.THRESH_BINARY)[1]
+	grayFrame2 = cv2.cvtColor(rawFrame2, cv2.COLOR_BGR2GRAY)
+	blurFrame2 = cv2.GaussianBlur(grayFrame2, (blurRegion, blurRegion), 0)
+	diffImg = cv2.absdiff(blurFrame1, blurFrame2)
+	threshImg = cv2.threshold(diffImg, pixelThreshold, 255, cv2.THRESH_BINARY)[1]
 
 	# Finding white points, calculating their difference/maximum, and adding the values
-	whitePoints = cv2.findNonZero(thresh)
+	whitePoints = cv2.findNonZero(threshImg)
 
 	if whitePoints is not None:
 
-		whitePoints = cv2.findNonZero(thresh).tolist()
+		whitePoints = cv2.findNonZero(threshImg).tolist()
 
 		whitePointXValues = []
 		whitePointYValues = []
@@ -114,36 +117,37 @@ while True:
 		yMaximum = max(whitePointYValues)
 		yDifference = yMaximum - yMinimum
 
-		actualDiffList.append(xDifference)
-		yList.append(yDifference)
+		xData.append(xDifference)
+		yData.append(yDifference)
 
 	else:
 
-		actualDiffList.append(0)
-		yList.append(0)
+		xData.append(0)
+		yData.append(0)
 
 	# Analyzing the data gathered
-	if len(actualDiffList) % sampleSize == 0:
+	if len(xData) % dataSampleSize == 0:
 
 		# Determining the windows of data
-		windowOfData = actualDiffList[len(actualDiffList) - sampleSize : len(actualDiffList)]
-		yWindow = yList[len(yList) - sampleSize : len(yList)]
+		xDataSample = xData[len(xData) - dataSampleSize : len(xData)]
+		yDataSample = yData[len(yData) - dataSampleSize : len(yData)]
 
-		filteredWindowOfData = []
-		filteredYWindow = []
+		xSampleFiltered = []
+		ySampleFiltered = []
 
 		# Filtering the window of data
-		for i in range(0, len(windowOfData)):
+		for i in range(0, len(xDataSample)):
 
-			if windowOfData[i] > lowerOutlierCutOff and windowOfData[i] < upperOutlierCutOff:
+			if xDataSample[i] > lowerOutlierLimit and xDataSample[i] < upperOutlierLimit:
 
-				filteredWindowOfData.append(windowOfData[i])
-				filteredDiffList.append(windowOfData[i])
-				filteredYWindow.append(yWindow[i])
+				xDataFiltered.append(xDataSample[i])
+
+				xSampleFiltered.append(xDataSample[i])
+				ySampleFiltered.append(yDataSample[i])
 		
-		if len(filteredWindowOfData) >= 2:
+		if len(xSampleFiltered) >= 2:
 			
-			maxIndex = filteredWindowOfData.index(max(filteredWindowOfData))
+			maxIndex = xSampleFiltered.index(max(xSampleFiltered))
 			
 			if maxIndex == 0:
 
@@ -151,18 +155,18 @@ while True:
 			
 			else:
 
-				minIndex = filteredWindowOfData.index(min(filteredWindowOfData)) - 1
+				minIndex = xSampleFiltered.index(min(xSampleFiltered)) - 1
 
-			filteredWindowOfData.remove(max(filteredWindowOfData))
-			filteredWindowOfData.remove(min(filteredWindowOfData))
+			xSampleFiltered.remove(max(xSampleFiltered))
+			xSampleFiltered.remove(min(xSampleFiltered))
 
-			del filteredYWindow[maxIndex]
-			del filteredYWindow[minIndex]
+			del ySampleFiltered[maxIndex]
+			del ySampleFiltered[minIndex]
 
 		# Ignoring the data if too little
-		if len(filteredWindowOfData) <= 1:
+		if len(xSampleFiltered) <= 1:
 
-			blur1 = blur2
+			blurFrame1 = blurFrame2
 			rawCapture2.truncate(0)
 			
 			continue
@@ -170,38 +174,38 @@ while True:
 		# Creating an x-axis for the linear regression
 		xAxis = []
 
-		for i in range(1, len(filteredWindowOfData) + 1):
+		for i in range(1, len(xSampleFiltered) + 1):
 
 			xAxis.append(i)
 		
 		# Finding the slope of the linear regression if possible
-		if len(filteredWindowOfData) > 0:
+		if len(xSampleFiltered) > 0:
 		
-			slope = numpy.polyfit(xAxis, filteredWindowOfData, 1)[0]
+			slope = numpy.polyfit(xAxis, xSampleFiltered, 1)[0]
 
 		# Finding the difference between the maximum and minimum y value
-		yData = max(filteredYWindow) - min(filteredYWindow)
+		yData = max(ySampleFiltered) - min(ySampleFiltered)
 
 		print(yData)
 
 		# Making a decision based on the data values
-		if yData > yEpsilon:
+		if yData > yDataThreshold:
 
-			statusChange = "reset"
+			gestureDetected = "reset"
 
-		elif len(filteredWindowOfData) > 0:
+		elif len(xSampleFiltered) > 0:
 
-			if slope < -xEpsilon:
+			if slope < -xDataThreshold:
 
-				statusChange = "closer"
+				gestureDetected = "closer"
 			
-			elif slope > xEpsilon:
+			elif slope > xDataThreshold:
 
-				statusChange = "farther"
+				gestureDetected = "farther"
 
 			else:
 
-				blur1 = blur2
+				blurFrame1 = blurFrame2
 				rawCapture2.truncate(0)
 
 				continue
@@ -211,64 +215,64 @@ while True:
 			print("[ERROR] Decision not possible!")
 			
 		# Printing out the decision
-		print("[INFO] Gesture detected: " + statusChange)
+		print("[INFO] Gesture detected: " + gestureDetected)
 
 		# Passing the decision through the pipe
-		if statusChange == "reset":
+		if gestureDetected == "reset":
 
 			fileName = "info/" + str(int(time.time())) + "_r" + "_" + str(zoomFactor)
 
 			open(fileName, "w").close()
 			
-		if statusChange == "closer":
+		if gestureDetected == "closer":
 
 			fileName = "info/" + str(int(time.time())) + "_c" + "_" + str(zoomFactor)
 
 			open(fileName, "w").close()
 
-		elif statusChange == "farther":
+		elif gestureDetected == "farther":
 
 			fileName = "info/" + str(int(time.time())) + "_f" + "_" + str(zoomFactor)
 			
 			open(fileName, "w").close()
 
-	blur1 = blur2
+	blurFrame1 = blurFrame2
 	rawCapture2.truncate(0)
 		
 # Opening the data files
-rawFile = open("data-raw.csv", "w")
-filteredFile = open("data-filtered.csv", "w")
+xDataFile = open("data-raw.csv", "w")
+xDataFilteredFile = open("data-filtered.csv", "w")
 yDataFile = open("data-y.csv", "w")
 
-# Writing the raw data file
+# Writing the raw x data file
 xAxis = []
 	
-for i in range(0, len(actualDiffList)):
+for i in range(0, len(xData)):
 
 	xAxis.append(i)
 
-for i in range(0, len(actualDiffList)):
+for i in range(0, len(xData)):
 
-	rawFile.write(str(xAxis[i]) + ", " + str(actualDiffList[i]) +  "\n")
+	xDataFile.write(str(xAxis[i]) + ", " + str(xData[i]) +  "\n")
 
-# Writing the filtered data file
+# Writing the filtered x data file
 xAxis = []
 
-for i in range(0, len(filteredDiffList)):
+for i in range(0, len(xDataFiltered)):
 
 	xAxis.append(i)
 
-for i in range(0, len(filteredDiffList)):
+for i in range(0, len(xDataFiltered)):
 
-	filteredFile.write(str(xAxis[i]) + ", " + str(filteredDiffList[i]) +  "\n")
+	xDataFilteredFile.write(str(xAxis[i]) + ", " + str(xDataFiltered[i]) +  "\n")
 
 # Writing the y data file
 xAxis = []
 
-for i in range(0, len(yList)):
+for i in range(0, len(yData)):
 
 	xAxis.append(i)
 
-for i in range(0, len(yList)):
+for i in range(0, len(yData)):
 
-	yDataFile.write(str(xAxis[i]) + ", " + str(yList[i]) + "\n")
+	yDataFile.write(str(xAxis[i]) + ", " + str(yData[i]) + "\n")
