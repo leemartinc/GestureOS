@@ -1,0 +1,135 @@
+"""
+   Copyright 2017 Charlie Liu and Bryan Zhou
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+"""
+
+from picamera import PiCamera
+from picamera import PiCamera
+import time
+from tools.captureProcessFrame import *
+import cv2
+from tools.processWhitePoints import *
+from tools.filterData import *
+from tools.determineDataTrends import *
+
+# Image resolution of captured frames
+IMG_SIZE = 256
+
+# Size of the surrounding region utilized when appying a Gaussian blur on frames
+BLUR_REGION = 5
+
+# Cutoff value for pixels when thresholding frames
+PIXEL_INTENSITY_THRESHOLD = 10
+
+# Number of elements to analyze when calculating trends in x-axis and y-axis movement
+DATA_WINDOW_SIZE = 10
+
+# Cutoff values for data points when being filtered
+LOWER_OUTLIER_CUTOFF = 25
+UPPER_OUTLIER_CUTOFF = 150
+
+# Cutoff values for calculated trends to compare with when detecting gestures
+X_DATA_THRESHOLD = 0.5
+Y_DATA_THRESHOLD = int(0.25 * IMG_SIZE)
+
+# Value at which the gesture detection will terminate and record all data in files
+FRAME_COUNT_LIMIT = int(input("Enter a frame count limit: "))
+
+# Zoom scale factor value to pass through the pipe for zoomDisplay.py
+ZOOM_FACTOR = 0.4
+
+# Initialize data lists
+xData = []
+xDataSample = []
+xDataFiltered = []
+
+yData = []
+yDataSample = []
+yDataFiltered = []
+
+# Define camera settings and specify variable to store frame
+camera = PiCamera()
+camera.resolution = (imgSize, imgSize)
+rgbFrame = PiRGBArray(camera, size = camera.resolution)
+
+time.sleep(0.1)
+
+frame1 = captureProcessFrame(camera, rgbFrame, BLUR_REGION)
+
+frameCount = 0
+
+while True:
+
+	# Increment the frame count each iteration and stop if over the frame count limit
+	frameCount += 1
+
+	if frameCount > FRAME_COUNT_LIMIT:
+
+		break
+
+	frame2 = captureProcessFrame(camera, rgbFrame, BLUR_REGION)
+
+	# Create an image based on the differences between the two frames and then enhance the result
+	diffImg = cv2.absdiff(frame1, frame2)
+	threshImg = cv2.threshold(diffImg, PIXEL_INTENSITY_THRESHOLD, 255, cv2.THRESH_BINARY)[1]
+
+	whitePixelsData = processWhitePoints(threshImg)
+
+	xData.append(whitePixelsData[0])
+	yData.append(whitePixelsData[1])
+
+	# Only continue to analyze the data if the next window of data has "rolled over"
+	if len(xData) % DATA_WINDOW_SIZE == 0:
+
+		filteredDataWindows = filterData(DATA_WINDOW_SIZE, xData, yData, LOWER_OUTLIER_CUTOFF, UPPER_OUTLIER_CUTOFF)
+
+		if filteredDataWindows is not None:
+
+			xWindowFiltered = filteredDataWindows[0]
+			yWindowFiltered = filteredDataWindows[1]
+
+			xDataFiltered += xWindowFiltered
+			yDataFiltered += yWindowFiltered
+			
+		else:
+
+			frame1 = frame2
+
+			continue
+		
+		gestureDetected = determineDataTrends(xWindowFiltered, yWindowFiltered, X_DATA_THRESHOLD, Y_DATA_THRESHOLD)
+
+		if gestureDetected is not None:
+
+			print("[INFO] Gesture detected: " + gestureDetected)
+
+			# Pass the time, gesture detected, and zoom factor through the pipe to zoomDisplay.py
+			fileName = "info/" + str(int(time.time())) + gestureDetected[0] + "_" + str(ZOOM_FACTOR)
+			open(fileName, "w").close()
+		
+		else:
+
+			frame1 = frame2
+
+			continue
+	
+	else:
+		
+		frame1 = frame2
+
+		continue
+		
+recordData(xData, xDataFiltered, yData, yDataFiltered)
+
+print("[INFO] Data recorded!")
