@@ -14,6 +14,8 @@
    limitations under the License.
 """
 
+import numpy
+
 # Apply a linear regression to the x data and find the range of the y data to compare those values against pre-determined values for determining a gesture
 def determineDataTrends(xData, yData, xDataThreshold, yDataThreshold):
 
@@ -23,7 +25,7 @@ def determineDataTrends(xData, yData, xDataThreshold, yDataThreshold):
 
         xAxis.append(i)
     
-    if len(xSampleFiltered) > 0:
+    if len(xData) > 0:
     
         xSlope = numpy.polyfit(xAxis, xData, 1)[0]
 

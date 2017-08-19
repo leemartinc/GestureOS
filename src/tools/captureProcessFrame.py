@@ -25,6 +25,6 @@ def captureProcessFrame(camera, rgbFrame, blurRegion):
     grayFrame = cv2.cvtColor(rawFrame, cv2.COLOR_BGR2GRAY)
     blurFrame = cv2.GaussianBlur(grayFrame, (blurRegion, blurRegion), 0)
 
-    rawFrame.truncate(0)
+    rgbFrame.truncate(0)
 
     return blurFrame

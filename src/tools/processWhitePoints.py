@@ -14,6 +14,8 @@
    limitations under the License.
 """
 
+import cv2
+
 # Searches for white pixels in an image and returns the ranges of the x-coordinates data set and y-coordinates data set; if there are no white pixels, 0s are returned
 def processWhitePoints(img):
 
@@ -30,8 +32,8 @@ def processWhitePoints(img):
 
 			for singleList in nestedLists:
 
-				whitePixelsXValues.append(list[0])
-				whitePixelsYValues.append(list[1])
+				whitePixelsXValues.append(singleList[0])
+				whitePixelsYValues.append(singleList[1])
 
 		xMinimum = min(whitePixelsXValues)
 		xMaximum = max(whitePixelsXValues)

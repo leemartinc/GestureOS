@@ -15,7 +15,7 @@
 """
 
 from picamera import PiCamera
-from picamera import PiCamera
+from picamera.array import PiRGBArray
 import time
 from tools.captureProcessFrame import *
 import cv2
@@ -61,7 +61,7 @@ yDataFiltered = []
 
 # Define camera settings and specify variable to store frame
 camera = PiCamera()
-camera.resolution = (imgSize, imgSize)
+camera.resolution = (IMG_SIZE, IMG_SIZE)
 rgbFrame = PiRGBArray(camera, size = camera.resolution)
 
 time.sleep(0.1)
