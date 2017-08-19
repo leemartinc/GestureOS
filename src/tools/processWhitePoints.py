@@ -17,7 +17,7 @@
 # Searches for white pixels in an image and returns the ranges of the x-coordinates data set and y-coordinates data set; if there are no white pixels, 0s are returned
 def processWhitePoints(img):
 
-    whitePixels = cv2.findNonZero(img)
+	whitePixels = cv2.findNonZero(img)
 	
 	if whitePixels is not None:
 		
