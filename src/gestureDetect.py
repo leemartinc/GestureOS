@@ -22,6 +22,7 @@ import cv2
 from tools.processWhitePoints import *
 from tools.filterData import *
 from tools.determineDataTrends import *
+from tools.recordData import *
 
 # Image resolution of captured frames
 IMG_SIZE = 256
@@ -69,14 +70,10 @@ frame1 = captureProcessFrame(camera, rgbFrame, BLUR_REGION)
 
 frameCount = 0
 
-while True:
+while frameCount <= FRAME_COUNT_LIMIT:
 
-	# Increment the frame count each iteration and stop if over the frame count limit
+	# Increment the frame count each iteration
 	frameCount += 1
-
-	if frameCount > FRAME_COUNT_LIMIT:
-
-		break
 
 	frame2 = captureProcessFrame(camera, rgbFrame, BLUR_REGION)
 
@@ -84,29 +81,30 @@ while True:
 	diffImg = cv2.absdiff(frame1, frame2)
 	threshImg = cv2.threshold(diffImg, PIXEL_INTENSITY_THRESHOLD, 255, cv2.THRESH_BINARY)[1]
 
+	# Assign frame 1 to frame 2 for the next iteration of comparison
+	frame1 = frame2
+
 	whitePixelsData = processWhitePoints(threshImg)
 
 	xData.append(whitePixelsData[0])
 	yData.append(whitePixelsData[1])
 
-	# Only continue to analyze the data if the next window of data has "rolled over"
+	# Only continue to analyze the data if there is a full window of data points
 	if len(xData) % DATA_WINDOW_SIZE == 0:
 
 		filteredDataWindows = filterData(DATA_WINDOW_SIZE, xData, yData, LOWER_OUTLIER_CUTOFF, UPPER_OUTLIER_CUTOFF)
 
-		if filteredDataWindows is not None:
-
-			xWindowFiltered = filteredDataWindows[0]
-			yWindowFiltered = filteredDataWindows[1]
-
-			xDataFiltered += xWindowFiltered
-			yDataFiltered += yWindowFiltered
-			
-		else:
-
-			frame1 = frame2
+		# If no data points survived the filtering, continue to the next iteration
+		if filteredDataWindows is None:
 
 			continue
+
+		xWindowFiltered = filteredDataWindows[0]
+		yWindowFiltered = filteredDataWindows[1]
+
+		# Save all filtered data so they can be analyzed later
+		xDataFiltered += xWindowFiltered
+		yDataFiltered += yWindowFiltered
 		
 		gestureDetected = determineDataTrends(xWindowFiltered, yWindowFiltered, X_DATA_THRESHOLD, Y_DATA_THRESHOLD)
 
@@ -117,18 +115,6 @@ while True:
 			# Pass the time, gesture detected, and zoom factor through the pipe to zoomDisplay.py
 			fileName = "info/" + str(int(time.time())) + gestureDetected[0] + "_" + str(ZOOM_FACTOR)
 			open(fileName, "w").close()
-		
-		else:
-
-			frame1 = frame2
-
-			continue
-	
-	else:
-		
-		frame1 = frame2
-
-		continue
 		
 recordData(xData, xDataFiltered, yData, yDataFiltered)
 
