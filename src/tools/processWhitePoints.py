@@ -18,9 +18,9 @@
 def processWhitePoints(img):
 
     whitePixels = cv2.findNonZero(img)
-
+	
 	if whitePixels is not None:
-
+		
 		whitePixelsList = cv2.findNonZero(img).tolist()
 
 		whitePixelsXValues = []
