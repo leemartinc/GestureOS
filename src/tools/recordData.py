@@ -15,7 +15,7 @@
 """
 
 # Records all the collected data from gestureDetected.py into .csv files located in ../info
-def recordData(xData, xFilteredData, yData, yFilteredData):
+def recordData(xData, xDataFiltered, yData, yDataFiltered):
 
     xDataFile = open("data-x-raw.csv", "w")
     xDataFilteredFile = open("data-x-filtered.csv", "w")

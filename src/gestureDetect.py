@@ -113,7 +113,7 @@ while frameCount <= FRAME_COUNT_LIMIT:
 			print("[INFO] Gesture detected: " + gestureDetected)
 
 			# Pass the time, gesture detected, and zoom factor through the pipe to zoomDisplay.py
-			fileName = "info/" + str(int(time.time())) + gestureDetected[0] + "_" + str(ZOOM_FACTOR)
+			fileName = "info/" + str(int(time.time())) + "_" + gestureDetected[0] + "_" + str(ZOOM_FACTOR)
 			open(fileName, "w").close()
 		
 recordData(xData, xDataFiltered, yData, yDataFiltered)
