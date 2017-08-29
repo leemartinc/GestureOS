@@ -22,6 +22,7 @@ import cv2
 from tools.processWhitePoints import *
 from tools.filterData import *
 from tools.determineDataTrends import *
+from tools.recordGesture import *
 from tools.recordData import *
 
 # Image resolution of captured frames
@@ -30,7 +31,7 @@ IMG_SIZE = 256
 # Size of the surrounding region utilized when appying a Gaussian blur on frames
 BLUR_REGION = 5
 
-# Cutoff value for pixels when thresholding frames
+# Cutoff for gray intensity value of pixels when thresholding frames
 PIXEL_INTENSITY_THRESHOLD = 10
 
 # Number of elements to analyze when calculating trends in x-axis and y-axis movement
@@ -89,7 +90,7 @@ while frameCount <= FRAME_COUNT_LIMIT:
 	xData.append(whitePixelsData[0])
 	yData.append(whitePixelsData[1])
 
-	# Only continue to analyze the data if there is a full window of data points
+	# Analyze for trends when a full window of data points has been gathered
 	if len(xData) % DATA_WINDOW_SIZE == 0:
 
 		filteredDataWindows = filterData(DATA_WINDOW_SIZE, xData, yData, LOWER_OUTLIER_CUTOFF, UPPER_OUTLIER_CUTOFF)
@@ -102,7 +103,7 @@ while frameCount <= FRAME_COUNT_LIMIT:
 		xWindowFiltered = filteredDataWindows[0]
 		yWindowFiltered = filteredDataWindows[1]
 
-		# Save all filtered data so they can be analyzed later
+		# Save all filtered data so they can be logged later
 		xDataFiltered += xWindowFiltered
 		yDataFiltered += yWindowFiltered
 		
@@ -110,12 +111,8 @@ while frameCount <= FRAME_COUNT_LIMIT:
 
 		if gestureDetected is not None:
 
+			recordGesture(gestureDetected, ZOOM_FACTOR)
 			print("[INFO] Gesture detected: " + gestureDetected)
-
-			# Pass the time, gesture detected, and zoom factor through the pipe to zoomDisplay.py
-			fileName = "info/" + str(int(time.time())) + "_" + gestureDetected[0] + "_" + str(ZOOM_FACTOR)
-			open(fileName, "w").close()
 		
 recordData(xData, xDataFiltered, yData, yDataFiltered)
-
 print("[INFO] Data recorded!")

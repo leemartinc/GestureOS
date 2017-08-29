@@ -14,16 +14,10 @@
    limitations under the License.
 """
 
-# Finds and stores the screen resolution of a display
-import subprocess
+import time
 
-command = subprocess.Popen(["fbset" , "-s"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+# Records the detected gesture, zoom factor, and time in the form of an empty file with a coded name
+def recordGesture(gesture, zoomFactor):
 
-rawOutput, error = command.communicate()
-
-output = rawOutput.decode("utf-8")
-
-lines = output.split("\n")
-info = lines[2].strip().split(" ")
-width = int(info[1])
-height = int(info[2])
+	fileName = "info/" + str(int(time.time())) + "_" + gesture[0] + "_" + str(zoomFactor)
+	open(fileName, "w").close()

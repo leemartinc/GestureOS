@@ -14,6 +14,7 @@
    limitations under the License.
 """
 
+# Filters corresponding data lists by eliminating outliers (determined by preset values) and the remaining maximum and minimum values
 def filterData(dataWindowSize, xData, yData, lowerOutlierCutoff, upperOutlierCutoff):
 
     xDataWindow = xData[len(xData) - dataWindowSize : len(xData)]
