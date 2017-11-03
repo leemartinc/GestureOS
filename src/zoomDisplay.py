@@ -13,8 +13,9 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 """
-from transfunction import transfunction
-from screenres import screenres
+
+from tools import transfunction
+from tools import screenres
 import time
 import cv2
 import os
