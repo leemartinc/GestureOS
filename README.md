@@ -5,7 +5,7 @@
 
 Perform advanced image transformations by detecting hand gestures!
 
-![Demo GIF of GestureOS](https://media.giphy.com/media/l1JohhEXst8EfdoeQ/giphy.gif)
+![Demo Picture of GestureOS](https://i.imgur.com/XO7zXuL.png)
 
 To run this project, you must have Python 3.x and OpenCV 3.x installed.
 
