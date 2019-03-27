@@ -46,7 +46,7 @@ X_DATA_THRESHOLD = 0.5
 Y_DATA_THRESHOLD = int(0.25 * IMG_SIZE)
 
 # Value at which the gesture detection will terminate and record all data in files
-FRAME_COUNT_LIMIT = int(input("Enter a frame count limit: "))
+#FRAME_COUNT_LIMIT = int(input("Enter a frame count limit: "))
 
 # Zoom scale factor value to pass through the pipe for zoomDisplay.py
 ZOOM_FACTOR = 0.4
@@ -71,7 +71,9 @@ frame1 = captureProcessFrame(camera, rgbFrame, BLUR_REGION)
 
 frameCount = 0
 
-while frameCount <= FRAME_COUNT_LIMIT:
+active = 1
+
+while active==1:
 
 	# Increment the frame count each iteration
 	frameCount += 1
@@ -107,12 +109,13 @@ while frameCount <= FRAME_COUNT_LIMIT:
 		xDataFiltered += xWindowFiltered
 		yDataFiltered += yWindowFiltered
 		
-		gestureDetected = determineDataTrends(xWindowFiltered, yWindowFiltered, X_DATA_THRESHOLD, Y_DATA_THRESHOLD)
+		gestureDetected = determineDataTrends(xData, yData, X_DATA_THRESHOLD, Y_DATA_THRESHOLD)
 
 		if gestureDetected is not None:
-
-			recordGesture(gestureDetected, ZOOM_FACTOR)
+			
 			print("[INFO] Gesture detected: " + gestureDetected)
+			#recordGesture(gestureDetected, ZOOM_FACTOR)
+			#print("[INFO] Gesture detected: " + gestureDetected)
 		
 recordData(xData, xDataFiltered, yData, yDataFiltered)
 print("[INFO] Data recorded!")

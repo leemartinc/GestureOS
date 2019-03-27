@@ -30,18 +30,28 @@ def determineDataTrends(xData, yData, xDataThreshold, yDataThreshold):
         xSlope = numpy.polyfit(xAxis, xData, 1)[0]
 
     yRange = max(yData) - min(yData)
-
+    xRange = max(xData) - min(xData)
+    print ("max " + str(max(xData)))
+    print ("min " + str(min(xData)))
+    
+    for i in range(0, len(xData)):
+        print (xData[i])
+    
     if xSlope < -xDataThreshold:
 
-        gestureDetected = "closer"
+        gestureDetected = "up"
     
     elif xSlope > xDataThreshold:
 
-        gestureDetected = "farther"
+        gestureDetected = "down"
 
     elif yRange > yDataThreshold:
 
-        gestureDetected = "reset"
+        gestureDetected = "left"
+
+        #elif xRange > yDataThreshold:
+
+        gestureDetected = "right"
 
     else:
 

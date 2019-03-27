@@ -17,7 +17,7 @@
 import time
 
 # Records the detected gesture, zoom factor, and time in the form of an empty file with a coded name
-def recordGesture(gesture, zoomFactor):
+def recordGesture(gesture, direction):
 
 	fileName = "info/" + str(int(time.time())) + "_" + gesture[0] + "_" + str(zoomFactor)
 	open(fileName, "w").close()
