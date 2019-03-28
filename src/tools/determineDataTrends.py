@@ -17,9 +17,19 @@
 import numpy
 
 # Apply a linear regression to the x data and find the range of the y data to compare those values against pre-determined values for determining a gesture
+# this is the file that will determine the gesture
+
+'''
+Algo : Create a slope of X and Y values
+non 0 data will be recorded. once the next 0 is reached, the data array will be created. then i can use the length of the data as x axis
+when evaluating yData to see if gesture is left or right:
+    A predetermined array of xAxis[0-255]? will be used as x axis and and yData will be used as y axis
+'''
 def determineDataTrends(xData, yData, xDataThreshold, yDataThreshold):
 
+    # Static X Axis to create slope
     xAxis = []
+    
 
     for i in range(1, len(xData) + 1):
 
@@ -37,6 +47,7 @@ def determineDataTrends(xData, yData, xDataThreshold, yDataThreshold):
     for i in range(0, len(xData)):
         print (xData[i])
     
+
     if xSlope < -xDataThreshold:
 
         gestureDetected = "up"

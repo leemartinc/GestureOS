@@ -15,6 +15,14 @@
 """
 
 # Filters corresponding data lists by eliminating outliers (determined by preset values) and the remaining maximum and minimum values
+'''
+sudo code to create slopable data from constant gesture detect
+If (data != 0){
+	while(data[I] != 0 ){
+		data.append[I]
+	}
+}
+'''
 def filterData(dataWindowSize, xData, yData, lowerOutlierCutoff, upperOutlierCutoff):
 
     xDataWindow = xData[len(xData) - dataWindowSize : len(xData)]

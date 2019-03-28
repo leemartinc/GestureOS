@@ -28,7 +28,7 @@ from tools.recordData import *
 # Image resolution of captured frames
 IMG_SIZE = 256
 
-# Size of the surrounding region utilized when appying a Gaussian blur on frames
+# Size of the surrounding region utilized when applying a Gaussian blur on frames
 BLUR_REGION = 5
 
 # Cutoff for gray intensity value of pixels when thresholding frames
@@ -43,13 +43,17 @@ UPPER_OUTLIER_CUTOFF = 150
 
 # Cutoff values for calculated trends to compare with when detecting gestures
 X_DATA_THRESHOLD = 0.5
-Y_DATA_THRESHOLD = int(0.25 * IMG_SIZE)
+#Y_DATA_THRESHOLD = int(0.25 * IMG_SIZE)
+#monitoring both and and Y direction
+Y_DATA_THRESHOLD = 0.5
 
 # Value at which the gesture detection will terminate and record all data in files
+# need script tp be run indefinitely
 #FRAME_COUNT_LIMIT = int(input("Enter a frame count limit: "))
 
 # Zoom scale factor value to pass through the pipe for zoomDisplay.py
-ZOOM_FACTOR = 0.4
+#Script is not responsible for zooming an image but rather directional input (up, down, left, right)
+# ZOOM_FACTOR = 0.4
 
 # Initialize data lists
 xData = []
@@ -93,6 +97,7 @@ while active==1:
 	yData.append(whitePixelsData[1])
 
 	# Analyze for trends when a full window of data points has been gathered
+	# will need to check for both X and Y
 	if len(xData) % DATA_WINDOW_SIZE == 0:
 
 		filteredDataWindows = filterData(DATA_WINDOW_SIZE, xData, yData, LOWER_OUTLIER_CUTOFF, UPPER_OUTLIER_CUTOFF)
@@ -102,6 +107,7 @@ while active==1:
 
 			continue
 
+		# filtered data returns 1d array with x as index 0 and y as index 1
 		xWindowFiltered = filteredDataWindows[0]
 		yWindowFiltered = filteredDataWindows[1]
 
